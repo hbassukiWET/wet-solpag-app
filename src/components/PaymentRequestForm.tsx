@@ -63,11 +63,7 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
       return;
     }
 
-    const userModifiedNum = numSP !== autoNumSP;
-    if (userModifiedNum && !showConfirmModal) {
-      setShowConfirmModal(true);
-      return;
-    }
+
 
     setIsSubmitting(true);
     try {
