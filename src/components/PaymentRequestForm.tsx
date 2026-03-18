@@ -48,6 +48,7 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
   const [adjunto, setAdjunto] = useState<File | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingNumSP, setPendingNumSP] = useState<string | null>(null);
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,14 +66,15 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
     }
   };
 
-  const handleSubmit = async () => {
+  const handlePreSubmit = () => {
     if (!empresa || !ordenCompra || !fechaPago || !transferenciaNombre || !moneda || !cuentaBanco || !conceptoPago || !subtotal || !impuestos || !montoTotal) {
       alert('Por favor completa todos los campos obligatorios');
       return;
     }
+    setShowSubmitConfirm(true);
+  };
 
-
-
+  const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
       await onSubmit({
@@ -80,7 +82,7 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
         empresa: empresa as Empresa,
         ordenCompra,
         fechaSolicitud,
-        fechaPagoTentativa: fechaPago,
+        fechaPagoTentativa: fechaPago!,
         transferenciaNombre,
         moneda: moneda as Moneda,
         cuentaBanco,
@@ -96,6 +98,7 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
       alert('Error al generar la solicitud');
     } finally {
       setIsSubmitting(false);
+      setShowSubmitConfirm(false);
       setShowConfirmModal(false);
     }
   };
@@ -309,7 +312,7 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
         </Card>
 
         <Button
-          onClick={handleSubmit}
+          onClick={handlePreSubmit}
           disabled={isSubmitting}
           className="w-full h-12 text-base"
           size="lg"
@@ -356,6 +359,33 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
               setShowConfirmModal(false);
             }}>
               Sí, usar {pendingNumSP}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de confirmación de envío */}
+      <Dialog open={showSubmitConfirm} onOpenChange={setShowSubmitConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar solicitud</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que deseas generar esta solicitud de pago?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowSubmitConfirm(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSubmit} disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Generando...
+                </>
+              ) : (
+                'Sí, generar'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
