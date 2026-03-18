@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +8,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
-import { CalendarIcon, Upload, FileText, X, Loader2 } from "lucide-react";
+import { CalendarIcon, Upload, FileText, X, Loader2, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -27,6 +27,30 @@ const EMPRESAS_INFO: { code: Empresa; name: string; color: string }[] = [
   { code: 'ITR', name: 'Inmobiliaria Trebol', color: 'bg-green-500' },
 ];
 const MONEDAS: Moneda[] = ['MXN', 'USD', 'EUR'];
+
+type FieldKey = 'empresa' | 'ordenCompra' | 'fechaPago' | 'transferenciaNombre' | 'moneda' | 'cuentaBanco' | 'conceptoPago' | 'subtotal' | 'impuestos' | 'montoTotal';
+
+const FIELD_LABELS: Record<FieldKey, string> = {
+  empresa: 'Empresa',
+  ordenCompra: 'Orden de Compra',
+  fechaPago: 'Fecha de Pago Tentativa',
+  transferenciaNombre: 'Transferencia a Nombre de',
+  moneda: 'Moneda',
+  cuentaBanco: 'Cuenta de Banco',
+  conceptoPago: 'Concepto de Pago',
+  subtotal: 'Subtotal',
+  impuestos: 'Impuestos',
+  montoTotal: 'Monto Total Solicitado',
+};
+
+const RequiredLabel = ({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) => (
+  <Label htmlFor={htmlFor}>
+    {children} <span className="text-destructive">*</span>
+  </Label>
+);
+
+const FieldError = ({ show }: { show: boolean }) =>
+  show ? <p className="text-xs text-destructive">Este campo es obligatorio</p> : null;
 
 const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestFormProps) => {
   const autoNumSP = String(currentConsecutivo).padStart(3, '0');
@@ -49,7 +73,32 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingNumSP, setPendingNumSP] = useState<string | null>(null);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [missingFields, setMissingFields] = useState<string[]>([]);
+  const [touched, setTouched] = useState<Set<FieldKey>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Refs for scroll-to-first-error
+  const fieldRefs = useRef<Partial<Record<FieldKey, HTMLDivElement | null>>>({});
+
+  const getFieldValues = useCallback((): Record<FieldKey, string> => ({
+    empresa,
+    ordenCompra,
+    fechaPago: fechaPago ? 'set' : '',
+    transferenciaNombre,
+    moneda,
+    cuentaBanco,
+    conceptoPago,
+    subtotal,
+    impuestos,
+    montoTotal,
+  }), [empresa, ordenCompra, fechaPago, transferenciaNombre, moneda, cuentaBanco, conceptoPago, subtotal, impuestos, montoTotal]);
+
+  const isFieldInvalid = (key: FieldKey): boolean => {
+    if (!touched.has(key)) return false;
+    const vals = getFieldValues();
+    return !vals[key];
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -67,8 +116,20 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
   };
 
   const handlePreSubmit = () => {
-    if (!empresa || !ordenCompra || !fechaPago || !transferenciaNombre || !moneda || !cuentaBanco || !conceptoPago || !subtotal || !impuestos || !montoTotal) {
-      alert('Por favor completa todos los campos obligatorios');
+    const vals = getFieldValues();
+    const missing: FieldKey[] = (Object.keys(vals) as FieldKey[]).filter(k => !vals[k]);
+
+    // Mark all as touched
+    setTouched(new Set(Object.keys(vals) as FieldKey[]));
+
+    if (missing.length > 0) {
+      setMissingFields(missing.map(k => FIELD_LABELS[k]));
+      setShowErrorModal(true);
+      // Scroll to first missing field
+      const firstRef = fieldRefs.current[missing[0]];
+      if (firstRef) {
+        firstRef.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       return;
     }
     setShowSubmitConfirm(true);
@@ -103,10 +164,12 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
     }
   };
 
+  const errorBorder = "border-destructive focus-visible:ring-destructive";
+
   return (
     <>
       <div className="space-y-6">
-        {/* Consecutivo */}
+        {/* Identificación */}
         <Card className="glass-card">
           <CardContent className="pt-6">
             <p className="form-section-title">Identificación</p>
@@ -132,10 +195,10 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
                   </p>
                 )}
               </div>
-              <div className="space-y-2">
-                <Label>Empresa</Label>
+              <div className="space-y-2" ref={el => { fieldRefs.current.empresa = el; }}>
+                <RequiredLabel>Empresa</RequiredLabel>
                 <Select value={empresa} onValueChange={(v) => setEmpresa(v as Empresa)}>
-                  <SelectTrigger>
+                  <SelectTrigger className={cn(isFieldInvalid('empresa') && errorBorder)}>
                     <SelectValue placeholder="Seleccionar empresa">
                       {empresa && (() => {
                         const info = EMPRESAS_INFO.find(e => e.code === empresa);
@@ -161,23 +224,26 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
                     ))}
                   </SelectContent>
                 </Select>
+                <FieldError show={isFieldInvalid('empresa')} />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Datos principales */}
+        {/* Datos del Pago */}
         <Card className="glass-card">
           <CardContent className="pt-6">
             <p className="form-section-title">Datos del Pago</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Orden de Compra</Label>
-                <Input value={ordenCompra} onChange={e => setOrdenCompra(e.target.value)} placeholder="SO-15-26" />
+              <div className="space-y-2" ref={el => { fieldRefs.current.ordenCompra = el; }}>
+                <RequiredLabel>Orden de Compra</RequiredLabel>
+                <Input value={ordenCompra} onChange={e => setOrdenCompra(e.target.value)} placeholder="SO-15-26" className={cn(isFieldInvalid('ordenCompra') && errorBorder)} />
+                <FieldError show={isFieldInvalid('ordenCompra')} />
               </div>
-              <div className="space-y-2">
-                <Label>Transferencia a Nombre de</Label>
-                <Input value={transferenciaNombre} onChange={e => setTransferenciaNombre(e.target.value)} />
+              <div className="space-y-2" ref={el => { fieldRefs.current.transferenciaNombre = el; }}>
+                <RequiredLabel>Transferencia a Nombre de</RequiredLabel>
+                <Input value={transferenciaNombre} onChange={e => setTransferenciaNombre(e.target.value)} className={cn(isFieldInvalid('transferenciaNombre') && errorBorder)} />
+                <FieldError show={isFieldInvalid('transferenciaNombre')} />
               </div>
               <div className="space-y-2">
                 <Label>Fecha de Solicitud</Label>
@@ -193,11 +259,11 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
                   </PopoverContent>
                 </Popover>
               </div>
-              <div className="space-y-2">
-                <Label>Fecha de Pago Tentativa</Label>
+              <div className="space-y-2" ref={el => { fieldRefs.current.fechaPago = el; }}>
+                <RequiredLabel>Fecha de Pago Tentativa</RequiredLabel>
                 <Popover open={fechaPagoOpen} onOpenChange={setFechaPagoOpen}>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !fechaPago && "text-muted-foreground")}>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !fechaPago && "text-muted-foreground", isFieldInvalid('fechaPago') && errorBorder)}>
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {fechaPago ? format(fechaPago, "PPP", { locale: es }) : "Seleccionar"}
                     </Button>
@@ -206,9 +272,10 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
                     <Calendar mode="single" selected={fechaPago} onSelect={(d) => { setFechaPago(d); setFechaPagoOpen(false); }} locale={es} className="pointer-events-auto" />
                   </PopoverContent>
                 </Popover>
+                <FieldError show={isFieldInvalid('fechaPago')} />
               </div>
-              <div className="space-y-2">
-                <Label>Moneda</Label>
+              <div className="space-y-2" ref={el => { fieldRefs.current.moneda = el; }}>
+                <RequiredLabel>Moneda</RequiredLabel>
                 <Select value={moneda} onValueChange={(v) => {
                   const m = v as Moneda;
                   setMoneda(m);
@@ -220,7 +287,7 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
                     setMontoTotal((sub + parseFloat(tax)).toFixed(2));
                   }
                 }}>
-                  <SelectTrigger>
+                  <SelectTrigger className={cn(isFieldInvalid('moneda') && errorBorder)}>
                     <SelectValue placeholder="Seleccionar" />
                   </SelectTrigger>
                   <SelectContent>
@@ -229,14 +296,17 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
                     ))}
                   </SelectContent>
                 </Select>
+                <FieldError show={isFieldInvalid('moneda')} />
               </div>
-              <div className="space-y-2">
-                <Label>Cuenta de Banco</Label>
-                <Input value={cuentaBanco} onChange={e => setCuentaBanco(e.target.value)} />
+              <div className="space-y-2" ref={el => { fieldRefs.current.cuentaBanco = el; }}>
+                <RequiredLabel>Cuenta de Banco</RequiredLabel>
+                <Input value={cuentaBanco} onChange={e => setCuentaBanco(e.target.value)} className={cn(isFieldInvalid('cuentaBanco') && errorBorder)} />
+                <FieldError show={isFieldInvalid('cuentaBanco')} />
               </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label>Concepto de Pago</Label>
-                <Input value={conceptoPago} onChange={e => setConceptoPago(e.target.value)} placeholder="FLETE TERR" />
+              <div className="space-y-2 sm:col-span-2" ref={el => { fieldRefs.current.conceptoPago = el; }}>
+                <RequiredLabel>Concepto de Pago</RequiredLabel>
+                <Input value={conceptoPago} onChange={e => setConceptoPago(e.target.value)} placeholder="FLETE TERR" className={cn(isFieldInvalid('conceptoPago') && errorBorder)} />
+                <FieldError show={isFieldInvalid('conceptoPago')} />
               </div>
             </div>
           </CardContent>
@@ -247,8 +317,8 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
           <CardContent className="pt-6">
             <p className="form-section-title">Montos</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>Subtotal</Label>
+              <div className="space-y-2" ref={el => { fieldRefs.current.subtotal = el; }}>
+                <RequiredLabel>Subtotal</RequiredLabel>
                 <Input type="number" step="0.01" value={subtotal} onChange={e => {
                   const val = e.target.value;
                   setSubtotal(val);
@@ -259,10 +329,11 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
                     setImpuestos(tax);
                     setMontoTotal((sub + parseFloat(tax)).toFixed(2));
                   }
-                }} placeholder="0.00" />
+                }} placeholder="0.00" className={cn(isFieldInvalid('subtotal') && errorBorder)} />
+                <FieldError show={isFieldInvalid('subtotal')} />
               </div>
-              <div className="space-y-2">
-                <Label>Impuestos (16%)</Label>
+              <div className="space-y-2" ref={el => { fieldRefs.current.impuestos = el; }}>
+                <RequiredLabel>Impuestos (16%)</RequiredLabel>
                 <Input type="number" step="0.01" value={impuestos} onChange={e => {
                   setImpuestos(e.target.value);
                   const sub = parseFloat(subtotal);
@@ -270,11 +341,13 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
                   if (!isNaN(sub) && !isNaN(tax)) {
                     setMontoTotal((sub + tax).toFixed(2));
                   }
-                }} placeholder="0.00" />
+                }} placeholder="0.00" className={cn(isFieldInvalid('impuestos') && errorBorder)} />
+                <FieldError show={isFieldInvalid('impuestos')} />
               </div>
-              <div className="space-y-2">
-                <Label>Monto Total Solicitado</Label>
-                <Input type="number" step="0.01" value={montoTotal} onChange={e => setMontoTotal(e.target.value)} placeholder="0.00" className="font-semibold" />
+              <div className="space-y-2" ref={el => { fieldRefs.current.montoTotal = el; }}>
+                <RequiredLabel>Monto Total Solicitado</RequiredLabel>
+                <Input type="number" step="0.01" value={montoTotal} onChange={e => setMontoTotal(e.target.value)} placeholder="0.00" className={cn("font-semibold", isFieldInvalid('montoTotal') && errorBorder)} />
+                <FieldError show={isFieldInvalid('montoTotal')} />
               </div>
             </div>
           </CardContent>
@@ -387,6 +460,31 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
                 'Sí, generar'
               )}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de campos faltantes */}
+      <Dialog open={showErrorModal} onOpenChange={setShowErrorModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-destructive" />
+              Campos obligatorios faltantes
+            </DialogTitle>
+            <DialogDescription asChild>
+              <div className="space-y-3 pt-2">
+                <p>Faltan los siguientes campos obligatorios:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  {missingFields.map(f => (
+                    <li key={f} className="text-destructive font-medium">{f}</li>
+                  ))}
+                </ul>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setShowErrorModal(false)}>Entendido</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
