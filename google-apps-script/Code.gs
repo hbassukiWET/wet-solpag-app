@@ -139,3 +139,53 @@ function jsonResponse(data, code) {
     .createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
 }
+
+/**
+ * Guarda un registro en el Sheet. Si overwrite=true y el num_sp ya existe,
+ * sobreescribe esa fila en lugar de agregar una nueva.
+ */
+function saveRecord(data) {
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+  const yy = new Date().getFullYear().toString().slice(-2);
+  const spCode = 'SP-' + yy + '_' + String(data.num_sp).padStart(3, '0');
+
+  const row = [
+    spCode,
+    new Date().toISOString(),        // Marca_Temporal
+    data.empresa || '',
+    data.orden_compra || '',
+    data.fecha_solicitud || '',
+    data.fecha_pago || '',
+    data.transferencia_nombre || '',
+    data.moneda || '',
+    data.cuenta_banco || '',
+    data.concepto_pago || '',
+    data.subtotal || 0,
+    data.impuestos || 0,
+    data.monto_total || 0,
+    data.comentarios || '',
+    data.documento || '',
+    data.solicitante || '',
+    data.url_drive || ''
+  ];
+
+  // Si overwrite=true, buscar fila existente con ese SP
+  if (data.overwrite) {
+    const lastRow = sheet.getLastRow();
+    if (lastRow > 1) {
+      const spValues = sheet.getRange('A2:A' + lastRow).getValues();
+      for (var i = 0; i < spValues.length; i++) {
+        if (String(spValues[i][0]).trim() === spCode) {
+          // Sobreescribir fila existente (i+2 porque empieza en fila 2)
+          var targetRow = i + 2;
+          sheet.getRange(targetRow, 1, 1, row.length).setValues([row]);
+          return { success: true, spCode: spCode, row: targetRow, overwritten: true };
+        }
+      }
+    }
+  }
+
+  // Si no se encontró o overwrite=false, agregar fila nueva
+  sheet.appendRow(row);
+  return { success: true, spCode: spCode, row: sheet.getLastRow(), overwritten: false };
+}
