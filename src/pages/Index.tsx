@@ -5,7 +5,7 @@ import PaymentRequestForm from "@/components/PaymentRequestForm";
 import AdminPanel from "@/components/AdminPanel";
 import ConfirmationScreen from "@/components/ConfirmationScreen";
 import { generatePDF, mergePDFs, generateFileName } from "@/lib/pdf-generator";
-import { fetchConsecutivo, uploadPDFToDrive, writeSheetRow } from "@/lib/google-api";
+import { fetchConsecutivo, uploadPDF, saveRecord } from "@/lib/google-api";
 import type { UserProfile, PaymentRequest } from "@/types/payment";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -56,11 +56,10 @@ const Index = () => {
 
     // 2. Upload PDF to Google Drive
     try {
-      const driveResult = await uploadPDFToDrive(fileName, pdfBytes);
+      const driveResult = await uploadPDF(fileName, pdfBytes);
       driveUrl = driveResult.url;
     } catch (err) {
       console.warn('No se pudo subir a Drive, descargando localmente:', err);
-      // Fallback: download locally
       const blob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -72,7 +71,7 @@ const Index = () => {
 
     // 3. Write row to Google Sheets
     try {
-      await writeSheetRow({
+      await saveRecord({
         numSP: data.numSP,
         empresa: data.empresa,
         ordenCompra: data.ordenCompra,
@@ -87,7 +86,8 @@ const Index = () => {
         cuentaBanco: data.cuentaBanco,
         comentarios: data.comentarios,
         email: user?.email,
-        driveUrl,
+        url_drive: driveUrl,
+        overwrite: false,
       });
     } catch (err) {
       console.warn('No se pudo escribir en Sheets:', err);
