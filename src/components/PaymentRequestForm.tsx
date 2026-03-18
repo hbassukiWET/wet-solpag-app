@@ -192,7 +192,7 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
               </div>
               <div className="space-y-2">
                 <Label>Fecha de Pago Tentativa</Label>
-                <Popover>
+                <Popover open={fechaPagoOpen} onOpenChange={setFechaPagoOpen}>
                   <PopoverTrigger asChild>
                     <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !fechaPago && "text-muted-foreground")}>
                       <CalendarIcon className="mr-2 h-4 w-4" />
@@ -200,7 +200,7 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={fechaPago} onSelect={setFechaPago} locale={es} className="pointer-events-auto" />
+                    <Calendar mode="single" selected={fechaPago} onSelect={(d) => { setFechaPago(d); setFechaPagoOpen(false); }} locale={es} className="pointer-events-auto" />
                   </PopoverContent>
                 </Popover>
               </div>
