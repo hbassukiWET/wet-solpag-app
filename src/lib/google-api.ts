@@ -92,6 +92,7 @@ export async function fetchRecords(): Promise<
     marca_temporal: string;
     empresa: string;
     concepto_pago: string;
+    transferencia_nombre: string;
     monto_total: number;
     moneda: string;
     fecha_pago: string;

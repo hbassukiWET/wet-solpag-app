@@ -15,6 +15,7 @@ interface SheetRecord {
   moneda: string;
   url_drive: string;
   fecha_pago?: string;
+  transferencia_nombre?: string;
 }
 
 const empresaBadgeStyles: Record<string, string> = {
@@ -114,6 +115,7 @@ const AdminPanel = () => {
                   <TableHead className="whitespace-nowrap bg-[#1B2A6B] text-white font-bold px-5 py-3.5 first:rounded-tl-none">Num SP</TableHead>
                   <TableHead className="bg-[#1B2A6B] text-white font-bold px-5 py-3.5">Empresa</TableHead>
                   <TableHead className="bg-[#1B2A6B] text-white font-bold px-5 py-3.5">Concepto de Pago</TableHead>
+                  <TableHead className="whitespace-nowrap bg-[#1B2A6B] text-white font-bold px-5 py-3.5">Transferencia a Nombre de</TableHead>
                   <TableHead className="text-right whitespace-nowrap bg-[#1B2A6B] text-white font-bold px-5 py-3.5">Monto Total</TableHead>
                   <TableHead className="bg-[#1B2A6B] text-white font-bold px-5 py-3.5">Moneda</TableHead>
                   <TableHead className="whitespace-nowrap bg-[#1B2A6B] text-white font-bold px-5 py-3.5">Fecha Pago Tentativa</TableHead>
@@ -139,6 +141,7 @@ const AdminPanel = () => {
                       </span>
                     </TableCell>
                     <TableCell className="px-5 py-3.5 max-w-[250px] truncate">{r.concepto_pago}</TableCell>
+                    <TableCell className="px-5 py-3.5 whitespace-nowrap">{r.transferencia_nombre || "—"}</TableCell>
                     <TableCell className="text-right font-mono px-5 py-3.5 whitespace-nowrap">
                       {formatCurrency(r.monto_total, r.moneda)}
                     </TableCell>
