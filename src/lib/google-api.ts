@@ -45,23 +45,24 @@ export async function uploadPDF(
 
 /** Write a new row to the Sheet */
 export async function saveRecord(data: {
-  numSP: string;
+  num_sp: string;
   empresa: string;
-  ordenCompra: string;
-  fechaSolicitud: string;
-  fechaPago: string;
-  transferenciaNombre: string;
+  orden_compra: string;
+  fecha_solicitud: string;
+  fecha_pago: string;
+  transferencia_nombre: string;
   moneda: string;
-  conceptoPago: string;
+  cuenta_banco: string;
+  concepto_pago: string;
   subtotal: number;
   impuestos: number;
-  montoTotal: number;
-  cuentaBanco: string;
+  monto_total: number;
   comentarios?: string;
-  email?: string;
+  documento?: string;
+  solicitante?: string;
   url_drive?: string;
   overwrite?: boolean;
-}): Promise<{ success: boolean; spCode: string; row: number }> {
+}): Promise<{ success: boolean }> {
   return callAppsScript({ action: 'saveRecord', ...data });
 }
 
