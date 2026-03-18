@@ -101,19 +101,41 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
     return !vals[key];
   };
 
+  const validateAndSetFile = (file: File) => {
+    if (file.type !== 'application/pdf') {
+      alert('Solo se permiten archivos PDF');
+      return;
+    }
+    if (file.size > 100 * 1024 * 1024) {
+      alert('El archivo no puede exceder 100MB');
+      return;
+    }
+    setAdjunto(file);
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.type !== 'application/pdf') {
-        alert('Solo se permiten archivos PDF');
-        return;
-      }
-      if (file.size > 100 * 1024 * 1024) {
-        alert('El archivo no puede exceder 100MB');
-        return;
-      }
-      setAdjunto(file);
-    }
+    if (file) validateAndSetFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) validateAndSetFile(file);
   };
 
   const handlePreSubmit = () => {
