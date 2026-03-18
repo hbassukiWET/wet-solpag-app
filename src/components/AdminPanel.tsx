@@ -17,6 +17,14 @@ interface SheetRecord {
   fecha_pago?: string;
 }
 
+const empresaBadgeStyles: Record<string, string> = {
+  WET: "bg-[#CC0000] text-white",
+  WEST: "bg-[#1B2A6B] text-white",
+  VCC: "bg-[#2E75B6] text-white",
+  ALDM: "bg-[#F5C400] text-black",
+  ITR: "bg-[#2E7D32] text-white",
+};
+
 const currencyBadgeStyles: Record<string, string> = {
   MXN: "bg-emerald-800 text-emerald-100",
   USD: "bg-emerald-500 text-white",
