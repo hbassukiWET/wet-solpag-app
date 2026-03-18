@@ -191,3 +191,35 @@ function saveRecord(data) {
   sheet.appendRow(row);
   return { success: true, spCode: spCode, row: sheet.getLastRow(), overwritten: false };
 }
+
+/**
+ * Lee todos los registros del Sheet y los retorna como array de objetos.
+ * Columnas: A=Num_SP, B=Marca_Temporal, C=Empresa, J=Concepto_Pago,
+ *           M=Monto_Total, H=Moneda, Q=URL_File_Drive
+ */
+function getRecords() {
+  var sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+  var lastRow = sheet.getLastRow();
+
+  if (lastRow <= 1) {
+    return { records: [] };
+  }
+
+  var data = sheet.getRange(2, 1, lastRow - 1, 17).getValues();
+  var records = [];
+
+  for (var i = 0; i < data.length; i++) {
+    var r = data[i];
+    records.push({
+      num_sp: String(r[0]),
+      marca_temporal: String(r[1]),
+      empresa: String(r[2]),
+      concepto_pago: String(r[9]),
+      monto_total: Number(r[12]) || 0,
+      moneda: String(r[7]),
+      url_drive: String(r[16])
+    });
+  }
+
+  return { records: records };
+}
