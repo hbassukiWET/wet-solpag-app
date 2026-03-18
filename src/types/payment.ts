@@ -1,0 +1,25 @@
+export type Empresa = 'WET' | 'WEST' | 'VCC' | 'TREBOL' | 'ALDIM';
+export type Moneda = 'MXN' | 'USD' | 'EUR';
+
+export interface PaymentRequest {
+  numSP: string;
+  empresa: Empresa;
+  ordenCompra: string;
+  fechaSolicitud: Date;
+  fechaPagoTentativa: Date;
+  transferenciaNombre: string;
+  moneda: Moneda;
+  cuentaBanco: string;
+  conceptoPago: string;
+  subtotal: number;
+  impuestos: number;
+  montoTotal: number;
+  comentarios?: string;
+  documentoAdjunto?: File;
+}
+
+export interface UserProfile {
+  email: string;
+  name: string;
+  picture?: string;
+}
