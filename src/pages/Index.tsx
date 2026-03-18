@@ -1,22 +1,33 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import LoginPage from "@/components/LoginPage";
 import Header from "@/components/Header";
 import PaymentRequestForm from "@/components/PaymentRequestForm";
 import AdminPanel from "@/components/AdminPanel";
 import ConfirmationScreen from "@/components/ConfirmationScreen";
 import { generatePDF, mergePDFs, generateFileName } from "@/lib/pdf-generator";
+import { fetchConsecutivo, uploadPDFToDrive, writeSheetRow } from "@/lib/google-api";
 import type { UserProfile, PaymentRequest } from "@/types/payment";
 import { toast } from "sonner";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 const Index = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'form' | 'admin'>('form');
-  const [consecutivo, setConsecutivo] = useState(70); // Mock — will come from Sheets
+  const [consecutivo, setConsecutivo] = useState(70);
   const [confirmation, setConfirmation] = useState<{ numSP: string; driveUrl?: string } | null>(null);
 
+  // Load consecutivo from Google Sheets on mount
+  useEffect(() => {
+    fetchConsecutivo()
+      .then(val => setConsecutivo(val))
+      .catch(err => {
+        console.warn('No se pudo leer consecutivo de Sheets, usando valor local:', err);
+      });
+  }, []);
+
   const handleLogin = useCallback(() => {
-    // Mock login — will be replaced with real Google OAuth
     const mockEmail = "usuario@wilbureagle.com";
     if (!mockEmail.endsWith("@wilbureagle.com")) {
       setLoginError("Acceso denegado. Solo cuentas @wilbureagle.com pueden acceder.");
@@ -32,35 +43,65 @@ const Index = () => {
   }, []);
 
   const handleSubmit = useCallback(async (data: PaymentRequest) => {
-    // Generate PDF
+    // 1. Generate PDF
     let pdfBytes = await generatePDF(data);
 
-    // Merge with attachment if present
     if (data.documentoAdjunto) {
       const attachmentBytes = new Uint8Array(await data.documentoAdjunto.arrayBuffer());
       pdfBytes = await mergePDFs(pdfBytes, attachmentBytes);
     }
 
     const fileName = generateFileName(data);
+    let driveUrl: string | undefined;
 
-    // Download PDF locally for now (Drive integration later)
-    const blob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    a.click();
-    URL.revokeObjectURL(url);
+    // 2. Upload PDF to Google Drive
+    try {
+      const driveResult = await uploadPDFToDrive(fileName, pdfBytes);
+      driveUrl = driveResult.url;
+    } catch (err) {
+      console.warn('No se pudo subir a Drive, descargando localmente:', err);
+      // Fallback: download locally
+      const blob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
 
-    // Update consecutivo if using auto
+    // 3. Write row to Google Sheets
+    try {
+      await writeSheetRow({
+        numSP: data.numSP,
+        empresa: data.empresa,
+        ordenCompra: data.ordenCompra,
+        fechaSolicitud: format(data.fechaSolicitud, "dd/MM/yyyy", { locale: es }),
+        fechaPago: format(data.fechaPagoTentativa, "dd/MM/yyyy", { locale: es }),
+        transferenciaNombre: data.transferenciaNombre,
+        moneda: data.moneda,
+        conceptoPago: data.conceptoPago,
+        subtotal: data.subtotal,
+        impuestos: data.impuestos,
+        montoTotal: data.montoTotal,
+        cuentaBanco: data.cuentaBanco,
+        comentarios: data.comentarios,
+        email: user?.email,
+        driveUrl,
+      });
+    } catch (err) {
+      console.warn('No se pudo escribir en Sheets:', err);
+    }
+
+    // 4. Update consecutivo
     const autoNum = String(consecutivo).padStart(3, '0');
     if (data.numSP === autoNum) {
       setConsecutivo(prev => prev + 1);
     }
 
-    toast.success("PDF generado exitosamente");
-    setConfirmation({ numSP: data.numSP, driveUrl: undefined });
-  }, [consecutivo]);
+    toast.success(driveUrl ? "PDF guardado en Drive exitosamente" : "PDF generado exitosamente");
+    setConfirmation({ numSP: data.numSP, driveUrl });
+  }, [consecutivo, user]);
 
   const handleNewRequest = useCallback(() => {
     setConfirmation(null);
