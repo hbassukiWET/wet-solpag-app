@@ -363,6 +363,33 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal de confirmación de envío */}
+      <Dialog open={showSubmitConfirm} onOpenChange={setShowSubmitConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar solicitud</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que deseas generar esta solicitud de pago?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowSubmitConfirm(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSubmit} disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Generando...
+                </>
+              ) : (
+                'Sí, generar'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
