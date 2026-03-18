@@ -69,44 +69,61 @@ export async function generatePDF(data: PaymentRequest): Promise<Uint8Array> {
   const cellPadding = 10;
   const dividerColor = rgb(0.82, 0.82, 0.84);
 
-  // Helper: draw a section with title + table rows
-  const drawSection = (title: string, rows: [string, string, Color?][]) => {
-    page.drawText(title, { x: tableX, y, size: 11, font: helveticaBold, color: accentColor });
-    y -= 5;
-    page.drawRectangle({ x: tableX, y, width: 140, height: 2, color: accentColor });
-    y -= 15;
+  // Helper: draw a borderless table (no section title)
+  const drawTable = (rows: [string, string, Color?][]) => {
+    const borderColor = rgb(0.75, 0.75, 0.78);
+    // Top border
+    page.drawRectangle({ x: tableX, y: y + rowHeight - 6, width: tableWidth, height: 0.75, color: borderColor });
 
     rows.forEach((row, i) => {
       const rowY = y - (i * rowHeight);
+      // Alternating bg
       if (i % 2 === 0) {
         page.drawRectangle({ x: tableX, y: rowY - 6, width: tableWidth, height: rowHeight, color: lightGray });
       }
-      page.drawRectangle({ x: tableX, y: rowY - 6, width: tableWidth, height: 0.5, color: dividerColor });
+      // Row bottom border
+      page.drawRectangle({ x: tableX, y: rowY - 6, width: tableWidth, height: 0.75, color: borderColor });
+      // Left & right borders
+      page.drawRectangle({ x: tableX, y: rowY - 6, width: 0.75, height: rowHeight, color: borderColor });
+      page.drawRectangle({ x: tableX + tableWidth - 0.75, y: rowY - 6, width: 0.75, height: rowHeight, color: borderColor });
+      // Column divider
+      page.drawRectangle({ x: tableX + col1Width, y: rowY - 6, width: 0.75, height: rowHeight, color: borderColor });
+
       page.drawText(row[0], { x: tableX + cellPadding, y: rowY + 4, size: 9, font: helveticaBold, color: darkBlue });
       page.drawText(row[1], { x: tableX + col1Width + cellPadding, y: rowY + 4, size: 9, font: helvetica, color: row[2] || gray });
     });
-    page.drawRectangle({ x: tableX, y: y - (rows.length * rowHeight) - 6 + rowHeight, width: tableWidth, height: 0.5, color: dividerColor });
-    y -= rows.length * rowHeight + 20;
+    y -= rows.length * rowHeight + 15;
   };
 
-  drawSection('Datos de Solicitud', [
+  // Table 1
+  drawTable([
     ['Empresa', data.empresa],
     ['Orden de Compra', data.ordenCompra],
     ['Fecha de Solicitud', format(data.fechaSolicitud, "dd/MM/yyyy", { locale: es })],
     ['Fecha de Pago Tentativa', format(data.fechaPagoTentativa, "dd/MM/yyyy", { locale: es })],
   ]);
 
-  drawSection('Datos de Pago', [
+  // Table 2
+  drawTable([
     ['Transferencia a Nombre de', data.transferenciaNombre],
-    ['Cuenta de Banco', data.cuentaBanco],
     ['Moneda', data.moneda, monedaColor],
+  ]);
+
+  // Table 3
+  drawTable([
     ['Concepto de Pago', data.conceptoPago],
   ]);
 
-  drawSection('Montos', [
+  // Table 4
+  drawTable([
     ['Subtotal', `$${data.subtotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`],
     ['Impuestos', `$${data.impuestos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`],
     ['Monto Total Solicitado', `$${data.montoTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`],
+  ]);
+
+  // Table 5
+  drawTable([
+    ['Cuenta de Banco', data.cuentaBanco],
   ]);
 
   // Comments section
