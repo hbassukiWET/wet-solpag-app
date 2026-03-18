@@ -70,6 +70,7 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
   const [montoTotal, setMontoTotal] = useState('');
   const [comentarios, setComentarios] = useState('');
   const [adjunto, setAdjunto] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingNumSP, setPendingNumSP] = useState<string | null>(null);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
