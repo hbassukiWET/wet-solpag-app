@@ -312,7 +312,7 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
         </Card>
 
         <Button
-          onClick={handleSubmit}
+          onClick={handlePreSubmit}
           disabled={isSubmitting}
           className="w-full h-12 text-base"
           size="lg"
