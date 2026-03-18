@@ -94,10 +94,16 @@ const Index = () => {
       console.warn('No se pudo escribir en Sheets:', err);
     }
 
-    // 4. Update consecutivo
-    const autoNum = String(consecutivo).padStart(3, '0');
-    if (data.numSP === autoNum) {
-      setConsecutivo(prev => prev + 1);
+    // 4. Refresh consecutivo from Sheets
+    try {
+      const newConsecutivo = await fetchConsecutivo();
+      setConsecutivo(newConsecutivo);
+    } catch {
+      // Fallback: increment locally
+      const autoNum = String(consecutivo).padStart(3, '0');
+      if (data.numSP === autoNum) {
+        setConsecutivo(prev => prev + 1);
+      }
     }
 
     toast.success(driveUrl ? "PDF guardado en Drive exitosamente" : "PDF generado exitosamente");
