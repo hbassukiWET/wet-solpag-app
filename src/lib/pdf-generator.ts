@@ -92,7 +92,7 @@ export async function generatePDF(data: PaymentRequest): Promise<Uint8Array> {
       page.drawText(row[0], { x: tableX + cellPadding, y: rowY + 4, size: 9, font: helveticaBold, color: darkBlue });
       page.drawText(row[1], { x: tableX + col1Width + cellPadding, y: rowY + 4, size: 9, font: helvetica, color: row[2] || gray });
     });
-    y -= rows.length * rowHeight + 15;
+    y -= rows.length * rowHeight + 30;
   };
 
   // Table 1
