@@ -177,6 +177,7 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
         montoTotal: parseFloat(montoTotal),
         comentarios: comentarios || undefined,
         documentoAdjunto: adjunto || undefined,
+        overwrite: userEditedSP,
       });
     } catch (err) {
       console.error(err);
