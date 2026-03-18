@@ -15,6 +15,7 @@ interface SheetRecord {
   moneda: string;
   url_drive: string;
   fecha_pago?: string;
+  transferencia_nombre?: string;
 }
 
 const empresaBadgeStyles: Record<string, string> = {
