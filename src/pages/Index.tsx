@@ -72,21 +72,22 @@ const Index = () => {
     // 3. Write row to Google Sheets
     try {
       await saveRecord({
-        numSP: data.numSP,
+        num_sp: data.numSP,
         empresa: data.empresa,
-        ordenCompra: data.ordenCompra,
-        fechaSolicitud: format(data.fechaSolicitud, "dd/MM/yyyy", { locale: es }),
-        fechaPago: format(data.fechaPagoTentativa, "dd/MM/yyyy", { locale: es }),
-        transferenciaNombre: data.transferenciaNombre,
+        orden_compra: data.ordenCompra,
+        fecha_solicitud: format(data.fechaSolicitud, "dd/MM/yyyy", { locale: es }),
+        fecha_pago: format(data.fechaPagoTentativa, "dd/MM/yyyy", { locale: es }),
+        transferencia_nombre: data.transferenciaNombre,
         moneda: data.moneda,
-        conceptoPago: data.conceptoPago,
+        cuenta_banco: data.cuentaBanco,
+        concepto_pago: data.conceptoPago,
         subtotal: data.subtotal,
         impuestos: data.impuestos,
-        montoTotal: data.montoTotal,
-        cuentaBanco: data.cuentaBanco,
-        comentarios: data.comentarios,
-        email: user?.email,
-        url_drive: driveUrl,
+        monto_total: data.montoTotal,
+        comentarios: data.comentarios || '',
+        documento: data.documentoAdjunto?.name || '',
+        solicitante: user?.email || '',
+        url_drive: driveUrl || '',
         overwrite: false,
       });
     } catch (err) {
