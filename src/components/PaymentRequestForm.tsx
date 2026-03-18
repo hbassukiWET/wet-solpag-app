@@ -39,6 +39,7 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
   const [comentarios, setComentarios] = useState('');
   const [adjunto, setAdjunto] = useState<File | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingNumSP, setPendingNumSP] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
