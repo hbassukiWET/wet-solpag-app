@@ -12,7 +12,9 @@ interface AdminPanelProps {
 }
 
 const AdminPanel = ({ currentConsecutivo, onUpdateConsecutivo }: AdminPanelProps) => {
-  const [newValue, setNewValue] = useState(String(currentConsecutivo).padStart(3, '0'));
+  // currentConsecutivo = next available number (e.g. 3 when 2 records exist)
+  const lastRegistered = currentConsecutivo - 1;
+  const [newValue, setNewValue] = useState(String(lastRegistered).padStart(3, '0'));
   const [showConfirm, setShowConfirm] = useState(false);
 
   const parsedValue = parseInt(newValue, 10);
@@ -25,7 +27,8 @@ const AdminPanel = ({ currentConsecutivo, onUpdateConsecutivo }: AdminPanelProps
   };
 
   const confirmSave = () => {
-    onUpdateConsecutivo(parsedValue);
+    // Set consecutivo to parsedValue + 1 so next SP = edited value + 1
+    onUpdateConsecutivo(parsedValue + 1);
     setShowConfirm(false);
   };
 
@@ -46,14 +49,17 @@ const AdminPanel = ({ currentConsecutivo, onUpdateConsecutivo }: AdminPanelProps
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="p-4 rounded-lg bg-muted/50">
-              <p className="text-sm text-muted-foreground">SP actual</p>
+              <p className="text-sm text-muted-foreground">Último SP registrado</p>
               <p className="text-3xl font-heading font-bold">
-                {String(currentConsecutivo).padStart(3, '0')}
+                {String(lastRegistered).padStart(3, '0')}
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                La siguiente solicitud será: <strong className="text-foreground">SP-{currentYear}_{String(currentConsecutivo).padStart(3, '0')}</strong>
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="newConsecutivo">Nuevo valor de consecutivo</Label>
+              <Label htmlFor="newConsecutivo">Establecer último SP registrado</Label>
               <Input
                 id="newConsecutivo"
                 value={newValue}
