@@ -70,6 +70,7 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
   const [montoTotal, setMontoTotal] = useState('');
   const [comentarios, setComentarios] = useState('');
   const [adjunto, setAdjunto] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingNumSP, setPendingNumSP] = useState<string | null>(null);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
@@ -100,19 +101,41 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
     return !vals[key];
   };
 
+  const validateAndSetFile = (file: File) => {
+    if (file.type !== 'application/pdf') {
+      alert('Solo se permiten archivos PDF');
+      return;
+    }
+    if (file.size > 100 * 1024 * 1024) {
+      alert('El archivo no puede exceder 100MB');
+      return;
+    }
+    setAdjunto(file);
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.type !== 'application/pdf') {
-        alert('Solo se permiten archivos PDF');
-        return;
-      }
-      if (file.size > 100 * 1024 * 1024) {
-        alert('El archivo no puede exceder 100MB');
-        return;
-      }
-      setAdjunto(file);
-    }
+    if (file) validateAndSetFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) validateAndSetFile(file);
   };
 
   const handlePreSubmit = () => {
@@ -373,9 +396,21 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
                     </Button>
                   </div>
                 ) : (
-                  <label className="flex items-center justify-center gap-2 p-6 rounded-lg border-2 border-dashed border-border cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors">
-                    <Upload className="w-5 h-5 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Haz clic para adjuntar un PDF</span>
+                  <label
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    className={cn(
+                      "flex flex-col items-center justify-center gap-2 p-6 rounded-lg border-2 border-dashed cursor-pointer transition-colors",
+                      isDragging
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-primary/50 hover:bg-muted/50"
+                    )}
+                  >
+                    <Upload className={cn("w-6 h-6", isDragging ? "text-primary" : "text-muted-foreground")} />
+                    <span className={cn("text-sm", isDragging ? "text-primary font-medium" : "text-muted-foreground")}>
+                      {isDragging ? "Suelta el archivo aquí" : "Arrastra un PDF aquí o haz clic para seleccionar"}
+                    </span>
                     <input type="file" accept=".pdf" onChange={handleFileChange} className="hidden" />
                   </label>
                 )}
