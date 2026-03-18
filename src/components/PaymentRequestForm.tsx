@@ -39,6 +39,7 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
   const [comentarios, setComentarios] = useState('');
   const [adjunto, setAdjunto] = useState<File | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingNumSP, setPendingNumSP] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,11 +63,7 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
       return;
     }
 
-    const userModifiedNum = numSP !== autoNumSP;
-    if (userModifiedNum && !showConfirmModal) {
-      setShowConfirmModal(true);
-      return;
-    }
+
 
     setIsSubmitting(true);
     try {
@@ -109,6 +106,12 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
                   id="numSP"
                   value={numSP}
                   onChange={(e) => setNumSP(e.target.value)}
+                  onBlur={() => {
+                    if (numSP !== autoNumSP && numSP.trim() !== '') {
+                      setPendingNumSP(numSP);
+                      setShowConfirmModal(true);
+                    }
+                  }}
                   placeholder="070"
                   className="font-mono text-lg"
                 />
@@ -290,22 +293,33 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
       </div>
 
       {/* Modal de confirmación de consecutivo */}
-      <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+      <Dialog open={showConfirmModal} onOpenChange={(open) => {
+        if (!open) {
+          setNumSP(autoNumSP);
+          setPendingNumSP(null);
+        }
+        setShowConfirmModal(open);
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Confirmar número de solicitud</DialogTitle>
             <DialogDescription>
-              ¿Estás seguro de que deseas usar el número <strong className="text-foreground">{numSP}</strong> en lugar del consecutivo automático <strong className="text-foreground">{autoNumSP}</strong>?
-              <br /><br />
-              Esto sobreescribirá la fila existente con ese número en el registro.
+              ¿Estás seguro de que deseas usar el número <strong className="text-foreground">{pendingNumSP}</strong> en lugar del consecutivo automático <strong className="text-foreground">{autoNumSP}</strong>?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowConfirmModal(false)}>
+            <Button variant="outline" onClick={() => {
+              setNumSP(autoNumSP);
+              setPendingNumSP(null);
+              setShowConfirmModal(false);
+            }}>
               Cancelar
             </Button>
-            <Button onClick={handleSubmit}>
-              Sí, usar {numSP}
+            <Button onClick={() => {
+              setPendingNumSP(null);
+              setShowConfirmModal(false);
+            }}>
+              Sí, usar {pendingNumSP}
             </Button>
           </DialogFooter>
         </DialogContent>
