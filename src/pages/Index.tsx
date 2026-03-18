@@ -5,7 +5,7 @@ import PaymentRequestForm from "@/components/PaymentRequestForm";
 import AdminPanel from "@/components/AdminPanel";
 import ConfirmationScreen from "@/components/ConfirmationScreen";
 import { generatePDF, mergePDFs, generateFileName } from "@/lib/pdf-generator";
-import { fetchConsecutivo, uploadPDFToDrive, writeSheetRow } from "@/lib/google-api";
+import { fetchConsecutivo, uploadPDF, saveRecord } from "@/lib/google-api";
 import type { UserProfile, PaymentRequest } from "@/types/payment";
 import { toast } from "sonner";
 import { format } from "date-fns";

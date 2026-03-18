@@ -26,13 +26,13 @@ export async function fetchConsecutivo(): Promise<number> {
   return result.consecutivo;
 }
 
-/** Upload a PDF (as base64) to Google Drive and return the URL */
+/** @deprecated Use uploadPDF instead */
 export async function uploadPDFToDrive(
   fileName: string,
   pdfBytes: Uint8Array
 ): Promise<{ success: boolean; url: string }> {
-  const base64 = uint8ArrayToBase64(pdfBytes);
-  return callAppsScript('uploadPDF' as never) as never;
+  const result = await uploadPDF(fileName, pdfBytes);
+  return { success: true, url: result.url };
 }
 
 export async function uploadPDF(
