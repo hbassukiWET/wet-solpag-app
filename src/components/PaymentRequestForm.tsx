@@ -110,6 +110,12 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
                   id="numSP"
                   value={numSP}
                   onChange={(e) => setNumSP(e.target.value)}
+                  onBlur={() => {
+                    if (numSP !== autoNumSP && numSP.trim() !== '') {
+                      setPendingNumSP(numSP);
+                      setShowConfirmModal(true);
+                    }
+                  }}
                   placeholder="070"
                   className="font-mono text-lg"
                 />
