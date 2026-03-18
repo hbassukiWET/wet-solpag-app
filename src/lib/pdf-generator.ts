@@ -1,7 +1,21 @@
-import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
-import type { PaymentRequest } from "@/types/payment";
+import { PDFDocument, rgb, StandardFonts, type Color } from "pdf-lib";
+import type { Empresa, PaymentRequest } from "@/types/payment";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+
+const EMPRESA_COLORS: Record<Empresa, Color> = {
+  WET: rgb(0.8, 0, 0),           // #CC0000
+  WEST: rgb(0.106, 0.165, 0.42), // #1B2A6B
+  VCC: rgb(0.18, 0.46, 0.71),    // #2E75B6
+  ALDM: rgb(0.96, 0.77, 0),      // #F5C400
+  ITR: rgb(0.18, 0.49, 0.196),   // #2E7D32
+};
+
+const MONEDA_COLORS: Record<string, Color> = {
+  EUR: rgb(0.18, 0.46, 0.71),    // #2E75B6
+  USD: rgb(0.298, 0.686, 0.314), // #4CAF50
+  MXN: rgb(0.106, 0.369, 0.125),// #1B5E20
+};
 
 export function generateFileName(data: PaymentRequest): string {
   const yy = new Date().getFullYear().toString().slice(-2);
@@ -13,7 +27,7 @@ export function generateFileName(data: PaymentRequest): string {
 
 export async function generatePDF(data: PaymentRequest): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
-  const page = pdfDoc.addPage([612, 792]); // Letter
+  const page = pdfDoc.addPage([612, 792]);
   const { height } = page.getSize();
 
   const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -21,10 +35,19 @@ export async function generatePDF(data: PaymentRequest): Promise<Uint8Array> {
 
   const darkBlue = rgb(0.1, 0.15, 0.25);
   const gray = rgb(0.4, 0.4, 0.45);
-  const lightGray = rgb(0.93, 0.93, 0.95);
-  const accentColor = rgb(0.9, 0.65, 0.1);
+  const lightGray = rgb(0.96, 0.96, 0.96); // #F5F5F5
+  const accentColor = EMPRESA_COLORS[data.empresa] || rgb(0.9, 0.65, 0.1);
 
   let y = height - 60;
+
+  // Logo placeholder
+  const logoW = 120;
+  const logoH = 60;
+  const logoX = (612 - logoW) / 2;
+  page.drawRectangle({ x: logoX, y: y - logoH, width: logoW, height: logoH, color: rgb(0.85, 0.85, 0.85) });
+  const codeWidth = helveticaBold.widthOfTextAtSize(data.empresa, 14);
+  page.drawText(data.empresa, { x: logoX + (logoW - codeWidth) / 2, y: y - logoH / 2 - 5, size: 14, font: helveticaBold, color: darkBlue });
+  y -= logoH + 20;
 
   // Title
   const title = `Solicitud de Pago #${data.numSP.padStart(3, '0')}`;
@@ -32,81 +55,70 @@ export async function generatePDF(data: PaymentRequest): Promise<Uint8Array> {
   page.drawText(title, { x: (612 - titleWidth) / 2, y, size: 20, font: helveticaBold, color: darkBlue });
   y -= 10;
 
-  // Accent line
+  // Accent line (empresa color)
   page.drawRectangle({ x: 206, y, width: 200, height: 3, color: accentColor });
   y -= 30;
 
-  // Try to load company logo
-  try {
-    const logoUrl = `/logos/logo_${data.empresa}.png`;
-    const logoResponse = await fetch(logoUrl);
-    if (logoResponse.ok) {
-      const logoBytes = await logoResponse.arrayBuffer();
-      const logoImage = await pdfDoc.embedPng(new Uint8Array(logoBytes));
-      const logoDims = logoImage.scale(0.5);
-      const logoWidth = Math.min(logoDims.width, 150);
-      const logoHeight = (logoWidth / logoDims.width) * logoDims.height;
-      page.drawImage(logoImage, {
-        x: (612 - logoWidth) / 2,
-        y: y - logoHeight,
-        width: logoWidth,
-        height: logoHeight,
-      });
-      y -= logoHeight + 20;
-    }
-  } catch {
-    // Logo not found, skip
-    y -= 10;
-  }
+  // Moneda color
+  const monedaColor = MONEDA_COLORS[data.moneda] || gray;
 
   // Table rows
-  const rows: [string, string][] = [
+  const rows: [string, string, Color?][] = [
     ['Empresa', data.empresa],
     ['Orden de Compra', data.ordenCompra],
     ['Fecha de Solicitud', format(data.fechaSolicitud, "dd/MM/yyyy", { locale: es })],
     ['Fecha de Pago Tentativa', format(data.fechaPagoTentativa, "dd/MM/yyyy", { locale: es })],
     ['Transferencia a Nombre de', data.transferenciaNombre],
-    ['Moneda', data.moneda],
+    ['Moneda', data.moneda, monedaColor],
     ['Cuenta de Banco', data.cuentaBanco],
     ['Concepto de Pago', data.conceptoPago],
-    ['Subtotal', `$${data.subtotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })} ${data.moneda}`],
-    ['Impuestos', `$${data.impuestos.toLocaleString('es-MX', { minimumFractionDigits: 2 })} ${data.moneda}`],
-    ['Monto Total Solicitado', `$${data.montoTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })} ${data.moneda}`],
+    ['Subtotal', `$${data.subtotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`],
+    ['Impuestos', `$${data.impuestos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`],
+    ['Monto Total Solicitado', `$${data.montoTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`],
   ];
 
   const tableX = 60;
   const tableWidth = 492;
   const col1Width = 200;
   const rowHeight = 28;
+  const cellPadding = 10;
+  const dividerColor = rgb(0.82, 0.82, 0.84);
 
   rows.forEach((row, i) => {
     const rowY = y - (i * rowHeight);
 
+    // Alternating row background
     if (i % 2 === 0) {
       page.drawRectangle({ x: tableX, y: rowY - 6, width: tableWidth, height: rowHeight, color: lightGray });
     }
 
-    page.drawText(row[0], { x: tableX + 10, y: rowY + 4, size: 9, font: helveticaBold, color: darkBlue });
-    page.drawText(row[1], { x: tableX + col1Width + 10, y: rowY + 4, size: 9, font: helvetica, color: gray });
+    // Row divider line
+    page.drawRectangle({ x: tableX, y: rowY - 6, width: tableWidth, height: 0.5, color: dividerColor });
+
+    page.drawText(row[0], { x: tableX + cellPadding, y: rowY + 4, size: 9, font: helveticaBold, color: darkBlue });
+    page.drawText(row[1], { x: tableX + col1Width + cellPadding, y: rowY + 4, size: 9, font: helvetica, color: row[2] || gray });
   });
+
+  // Bottom divider
+  const lastRowY = y - (rows.length * rowHeight);
+  page.drawRectangle({ x: tableX, y: lastRowY - 6 + rowHeight, width: tableWidth, height: 0.5, color: dividerColor });
 
   y -= rows.length * rowHeight + 20;
 
-  // Comments section (only if present)
+  // Comments section
   if (data.comentarios && data.comentarios.trim()) {
-    page.drawText('Observaciones', { x: tableX, y, size: 11, font: helveticaBold, color: darkBlue });
+    page.drawText('Comentarios adicionales', { x: tableX, y, size: 11, font: helveticaBold, color: darkBlue });
     y -= 5;
-    page.drawRectangle({ x: tableX, y, width: 100, height: 2, color: accentColor });
+    page.drawRectangle({ x: tableX, y, width: 140, height: 2, color: accentColor });
     y -= 15;
 
-    // Word wrap comments
     const maxWidth = tableWidth - 20;
     const words = data.comentarios.split(' ');
     let line = '';
     for (const word of words) {
       const testLine = line ? `${line} ${word}` : word;
       if (helvetica.widthOfTextAtSize(testLine, 9) > maxWidth) {
-        page.drawText(line, { x: tableX + 10, y, size: 9, font: helvetica, color: gray });
+        page.drawText(line, { x: tableX + cellPadding, y, size: 9, font: helvetica, color: gray });
         y -= 14;
         line = word;
       } else {
@@ -114,7 +126,7 @@ export async function generatePDF(data: PaymentRequest): Promise<Uint8Array> {
       }
     }
     if (line) {
-      page.drawText(line, { x: tableX + 10, y, size: 9, font: helvetica, color: gray });
+      page.drawText(line, { x: tableX + cellPadding, y, size: 9, font: helvetica, color: gray });
     }
   }
 
