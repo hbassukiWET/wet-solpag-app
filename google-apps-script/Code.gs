@@ -26,8 +26,10 @@ function doPost(e) {
         return jsonResponse(getConsecutivo());
       case 'writeRow':
         return jsonResponse(writeRow(body.data));
+      case 'saveRecord':
+        return jsonResponse(saveRecord(body));
       case 'uploadPDF':
-        return jsonResponse(uploadPDF(body.data));
+        return jsonResponse(uploadPDF(body));
       default:
         return jsonResponse({ error: 'Acción no reconocida' }, 400);
     }
