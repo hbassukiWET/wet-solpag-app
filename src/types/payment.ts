@@ -1,4 +1,4 @@
-export type Empresa = 'WET' | 'WEST' | 'VCC' | 'TREBOL' | 'ALDIM';
+export type Empresa = 'WET' | 'WEST' | 'VCC' | 'ALDM' | 'ITR';
 export type Moneda = 'MXN' | 'USD' | 'EUR';
 
 export interface PaymentRequest {

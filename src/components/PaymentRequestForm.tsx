@@ -131,11 +131,28 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
                 <Label>Empresa</Label>
                 <Select value={empresa} onValueChange={(v) => setEmpresa(v as Empresa)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar empresa" />
+                    <SelectValue placeholder="Seleccionar empresa">
+                      {empresa && (() => {
+                        const info = EMPRESAS_INFO.find(e => e.code === empresa);
+                        return info ? (
+                          <span className="flex items-center gap-2">
+                            <span className={`inline-block w-2.5 h-2.5 rounded-full ${info.color}`} />
+                            <span className="font-medium">{info.code}</span>
+                            <span className="text-muted-foreground">— {info.name}</span>
+                          </span>
+                        ) : null;
+                      })()}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {EMPRESAS.map(e => (
-                      <SelectItem key={e} value={e}>{e}</SelectItem>
+                    {EMPRESAS_INFO.map(e => (
+                      <SelectItem key={e.code} value={e.code}>
+                        <span className="flex items-center gap-2">
+                          <span className={`inline-block w-2.5 h-2.5 rounded-full ${e.color}`} />
+                          <span className="font-medium">{e.code}</span>
+                          <span className="text-muted-foreground">— {e.name}</span>
+                        </span>
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
