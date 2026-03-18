@@ -117,27 +117,32 @@ export async function generatePDF(data: PaymentRequest): Promise<Uint8Array> {
       return { row, isHighlight, labelFont, valueFont, labelLines, valueLines, height: rh };
     });
 
-    // Top border of table
-    page.drawRectangle({ x: tableX, y: y + minRowHeight - 6, width: tableWidth, height: 0.75, color: borderColor });
-
     let cumulativeY = 0;
     rowData.forEach((rd, i) => {
       const rowY = y - cumulativeY;
       const rh = rd.height;
       const isHighlight = rd.isHighlight;
+      const cellBottom = rowY - rh + minRowHeight - 6;
+      const cellTop = cellBottom + rh;
 
       // Background
       if (isHighlight) {
-        page.drawRectangle({ x: tableX, y: rowY - rh + minRowHeight - 6, width: tableWidth, height: rh, color: lightAccent });
+        page.drawRectangle({ x: tableX, y: cellBottom, width: tableWidth, height: rh, color: lightAccent });
       } else if (i % 2 === 0) {
-        page.drawRectangle({ x: tableX, y: rowY - rh + minRowHeight - 6, width: tableWidth, height: rh, color: lightGray });
+        page.drawRectangle({ x: tableX, y: cellBottom, width: tableWidth, height: rh, color: lightGray });
       }
 
-      // Borders
-      page.drawRectangle({ x: tableX, y: rowY - rh + minRowHeight - 6, width: tableWidth, height: 0.75, color: borderColor });
-      page.drawRectangle({ x: tableX, y: rowY - rh + minRowHeight - 6, width: 0.75, height: rh, color: borderColor });
-      page.drawRectangle({ x: tableX + tableWidth - 0.75, y: rowY - rh + minRowHeight - 6, width: 0.75, height: rh, color: borderColor });
-      page.drawRectangle({ x: tableX + col1Width, y: rowY - rh + minRowHeight - 6, width: 0.75, height: rh, color: borderColor });
+      // All 4 borders explicitly for every row
+      // Top border
+      page.drawRectangle({ x: tableX, y: cellTop, width: tableWidth, height: 0.75, color: borderColor });
+      // Bottom border
+      page.drawRectangle({ x: tableX, y: cellBottom, width: tableWidth, height: 0.75, color: borderColor });
+      // Left border
+      page.drawRectangle({ x: tableX, y: cellBottom, width: 0.75, height: rh, color: borderColor });
+      // Right border
+      page.drawRectangle({ x: tableX + tableWidth - 0.75, y: cellBottom, width: 0.75, height: rh, color: borderColor });
+      // Column divider
+      page.drawRectangle({ x: tableX + col1Width, y: cellBottom, width: 0.75, height: rh, color: borderColor });
 
       // Draw label lines
       const valueColor = isHighlight ? darkBlue : (rd.row[2] || gray);
