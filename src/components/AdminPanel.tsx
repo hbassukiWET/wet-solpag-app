@@ -26,7 +26,7 @@ const AdminPanel = () => {
     setError(null);
     try {
       const data = await fetchRecords();
-      setRecords(data);
+      setRecords(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Error loading records:", err);
       setError("No se pudieron cargar los registros.");
