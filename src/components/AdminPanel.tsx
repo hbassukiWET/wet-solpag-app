@@ -29,7 +29,7 @@ const AdminPanel = () => {
       setRecords(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Error loading records:", err);
-      setError("No se pudieron cargar los registros.");
+      setError(err instanceof Error ? err.message : "No se pudieron cargar los registros.");
     } finally {
       setLoading(false);
     }

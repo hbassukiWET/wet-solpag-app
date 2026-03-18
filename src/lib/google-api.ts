@@ -6,6 +6,12 @@ const APPS_SCRIPT_URL =
   import.meta.env.VITE_APPS_SCRIPT_URL ||
   'https://script.google.com/a/macros/wilbureagle.com/s/AKfycbyFEvte_P8ruYO40uZTGJshP2jVkeSz4qMIYjE-ZwUsEpDqZ-TcJcS9dsyDLWrsp-mF/exec';
 
+type AppsScriptErrorPayload = {
+  success?: boolean;
+  error?: string;
+  message?: string;
+};
+
 async function callAppsScript<T = unknown>(payload: Record<string, unknown>): Promise<T> {
   const res = await fetch(APPS_SCRIPT_URL, {
     method: 'POST',
@@ -17,7 +23,19 @@ async function callAppsScript<T = unknown>(payload: Record<string, unknown>): Pr
     throw new Error(`Apps Script error: ${res.status}`);
   }
 
-  return res.json() as Promise<T>;
+  const data = (await res.json()) as T & AppsScriptErrorPayload;
+
+  if (typeof data === 'object' && data !== null) {
+    if (data.success === false) {
+      throw new Error(data.error || data.message || 'Error en Apps Script');
+    }
+
+    if (typeof data.error === 'string' && data.error.trim().length > 0) {
+      throw new Error(data.error);
+    }
+  }
+
+  return data as T;
 }
 
 /** Read the last consecutivo from Sheet column A */
