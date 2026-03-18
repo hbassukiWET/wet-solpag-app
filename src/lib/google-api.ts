@@ -67,6 +67,22 @@ export async function saveRecord(data: {
   return callAppsScript({ action: 'saveRecord', ...data });
 }
 
+/** Fetch all records from the Sheet */
+export async function fetchRecords(): Promise<
+  Array<{
+    num_sp: string;
+    marca_temporal: string;
+    empresa: string;
+    concepto_pago: string;
+    monto_total: number;
+    moneda: string;
+    url_drive: string;
+  }>
+> {
+  const result = await callAppsScript<{ records: any[] }>({ action: 'getRecords' });
+  return result.records;
+}
+
 function uint8ArrayToBase64(bytes: Uint8Array): string {
   let binary = '';
   for (let i = 0; i < bytes.length; i++) {
