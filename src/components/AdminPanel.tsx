@@ -115,6 +115,7 @@ const AdminPanel = () => {
                   <TableHead className="whitespace-nowrap bg-[#1B2A6B] text-white font-bold px-5 py-3.5 first:rounded-tl-none">Num SP</TableHead>
                   <TableHead className="bg-[#1B2A6B] text-white font-bold px-5 py-3.5">Empresa</TableHead>
                   <TableHead className="bg-[#1B2A6B] text-white font-bold px-5 py-3.5">Concepto de Pago</TableHead>
+                  <TableHead className="whitespace-nowrap bg-[#1B2A6B] text-white font-bold px-5 py-3.5">Transferencia a Nombre de</TableHead>
                   <TableHead className="text-right whitespace-nowrap bg-[#1B2A6B] text-white font-bold px-5 py-3.5">Monto Total</TableHead>
                   <TableHead className="bg-[#1B2A6B] text-white font-bold px-5 py-3.5">Moneda</TableHead>
                   <TableHead className="whitespace-nowrap bg-[#1B2A6B] text-white font-bold px-5 py-3.5">Fecha Pago Tentativa</TableHead>
