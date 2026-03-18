@@ -141,6 +141,7 @@ const AdminPanel = () => {
                       </span>
                     </TableCell>
                     <TableCell className="px-5 py-3.5 max-w-[250px] truncate">{r.concepto_pago}</TableCell>
+                    <TableCell className="px-5 py-3.5 whitespace-nowrap">{r.transferencia_nombre || "—"}</TableCell>
                     <TableCell className="text-right font-mono px-5 py-3.5 whitespace-nowrap">
                       {formatCurrency(r.monto_total, r.moneda)}
                     </TableCell>
