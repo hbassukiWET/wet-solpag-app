@@ -4,7 +4,7 @@
 
 const APPS_SCRIPT_URL =
   import.meta.env.VITE_APPS_SCRIPT_URL ||
-  'https://script.google.com/macros/s/AKfycbyFEvte_P8ruYO40uZTGJshP2jVkeSz4qMIYjE-ZwUsEpDqZ-TcJcS9dsyDLWrsp-mF/exec';
+  'https://script.google.com/a/macros/wilbureagle.com/s/AKfycbyFEvte_P8ruYO40uZTGJshP2jVkeSz4qMIYjE-ZwUsEpDqZ-TcJcS9dsyDLWrsp-mF/exec';
 
 async function callAppsScript<T = unknown>(payload: Record<string, unknown>): Promise<T> {
   const res = await fetch(APPS_SCRIPT_URL, {
