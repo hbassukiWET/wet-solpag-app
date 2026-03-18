@@ -69,28 +69,42 @@ export async function generatePDF(data: PaymentRequest): Promise<Uint8Array> {
   const cellPadding = 10;
   const dividerColor = rgb(0.82, 0.82, 0.84);
 
-  // Helper: draw a borderless table (no section title)
-  const drawTable = (rows: [string, string, Color?][]) => {
+  // Soft accent for highlighted rows (~12% opacity blend with white)
+  const accentR = 'red' in accentColor ? 0 : 0;
+  // Use a helper to create light accent
+  const blendWithWhite = (c: Color, opacity: number): Color => {
+    const r = (c as any).red ?? 0.5;
+    const g = (c as any).green ?? 0.5;
+    const b = (c as any).blue ?? 0.5;
+    return rgb(1 - opacity * (1 - r), 1 - opacity * (1 - g), 1 - opacity * (1 - b));
+  };
+  const lightAccent = blendWithWhite(accentColor, 0.12);
+
+  // Helper: draw a table; rows can be [label, value, color?, highlight?]
+  const drawTable = (rows: [string, string, Color?, boolean?][]) => {
     const borderColor = rgb(0.75, 0.75, 0.78);
-    // Top border
     page.drawRectangle({ x: tableX, y: y + rowHeight - 6, width: tableWidth, height: 0.75, color: borderColor });
 
     rows.forEach((row, i) => {
       const rowY = y - (i * rowHeight);
-      // Alternating bg
-      if (i % 2 === 0) {
+      const isHighlight = row[3] === true;
+      // Background
+      if (isHighlight) {
+        page.drawRectangle({ x: tableX, y: rowY - 6, width: tableWidth, height: rowHeight, color: lightAccent });
+      } else if (i % 2 === 0) {
         page.drawRectangle({ x: tableX, y: rowY - 6, width: tableWidth, height: rowHeight, color: lightGray });
       }
-      // Row bottom border
+      // Borders
       page.drawRectangle({ x: tableX, y: rowY - 6, width: tableWidth, height: 0.75, color: borderColor });
-      // Left & right borders
       page.drawRectangle({ x: tableX, y: rowY - 6, width: 0.75, height: rowHeight, color: borderColor });
       page.drawRectangle({ x: tableX + tableWidth - 0.75, y: rowY - 6, width: 0.75, height: rowHeight, color: borderColor });
-      // Column divider
       page.drawRectangle({ x: tableX + col1Width, y: rowY - 6, width: 0.75, height: rowHeight, color: borderColor });
 
-      page.drawText(row[0], { x: tableX + cellPadding, y: rowY + 4, size: 9, font: helveticaBold, color: darkBlue });
-      page.drawText(row[1], { x: tableX + col1Width + cellPadding, y: rowY + 4, size: 9, font: helvetica, color: row[2] || gray });
+      const labelFont = helveticaBold;
+      const valueFont = isHighlight ? helveticaBold : helvetica;
+      const valueColor = isHighlight ? darkBlue : (row[2] || gray);
+      page.drawText(row[0], { x: tableX + cellPadding, y: rowY + 4, size: 9, font: labelFont, color: darkBlue });
+      page.drawText(row[1], { x: tableX + col1Width + cellPadding, y: rowY + 4, size: 9, font: valueFont, color: valueColor });
     });
     y -= rows.length * rowHeight + 30;
   };
