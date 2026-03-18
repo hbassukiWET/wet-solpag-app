@@ -94,6 +94,7 @@ export async function fetchRecords(): Promise<
     concepto_pago: string;
     monto_total: number;
     moneda: string;
+    fecha_pago: string;
     url_drive: string;
   }>
 > {

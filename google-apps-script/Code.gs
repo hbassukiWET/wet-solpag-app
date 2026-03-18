@@ -217,6 +217,7 @@ function getRecords() {
       concepto_pago: String(r[9]),
       monto_total: Number(r[12]) || 0,
       moneda: String(r[7]),
+      fecha_pago: String(r[5]),
       url_drive: String(r[16])
     });
   }
