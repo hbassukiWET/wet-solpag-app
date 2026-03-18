@@ -129,7 +129,15 @@ const AdminPanel = () => {
                     }`}
                   >
                     <TableCell className="font-mono font-bold px-5 py-3.5 whitespace-nowrap">{r.num_sp}</TableCell>
-                    <TableCell className="px-5 py-3.5">{r.empresa}</TableCell>
+                    <TableCell className="px-5 py-3.5">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                          empresaBadgeStyles[r.empresa] || "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {r.empresa}
+                      </span>
+                    </TableCell>
                     <TableCell className="px-5 py-3.5 max-w-[250px] truncate">{r.concepto_pago}</TableCell>
                     <TableCell className="text-right font-mono px-5 py-3.5 whitespace-nowrap">
                       {formatCurrency(r.monto_total, r.moneda)}

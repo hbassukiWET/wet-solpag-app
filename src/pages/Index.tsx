@@ -123,7 +123,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header user={user} onLogout={handleLogout} activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+      <main className={`mx-auto px-4 sm:px-6 py-8 ${activeTab === 'admin' ? 'max-w-full' : 'max-w-3xl'}`}>
         {activeTab === 'form' ? (
           confirmation ? (
             <ConfirmationScreen
