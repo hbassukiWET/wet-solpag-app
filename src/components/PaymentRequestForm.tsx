@@ -446,6 +446,7 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
         if (!open) {
           setNumSP(autoNumSP);
           setPendingNumSP(null);
+          setUserEditedSP(false);
         }
         setShowConfirmModal(open);
       }}>
