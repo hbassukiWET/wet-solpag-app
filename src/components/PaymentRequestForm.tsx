@@ -19,7 +19,13 @@ interface PaymentRequestFormProps {
   onSubmit: (data: PaymentRequest) => Promise<void>;
 }
 
-const EMPRESAS: Empresa[] = ['WET', 'WEST', 'VCC', 'TREBOL', 'ALDIM'];
+const EMPRESAS_INFO: { code: Empresa; name: string; color: string }[] = [
+  { code: 'WET', name: 'Wilbur Eagle Technology', color: 'bg-red-500' },
+  { code: 'WEST', name: 'West Energy', color: 'bg-blue-900' },
+  { code: 'VCC', name: 'Victoria Connysys', color: 'bg-blue-500' },
+  { code: 'ALDM', name: 'Aldim Energy', color: 'bg-yellow-500' },
+  { code: 'ITR', name: 'Inmobiliaria Trebol', color: 'bg-green-500' },
+];
 const MONEDAS: Moneda[] = ['MXN', 'USD', 'EUR'];
 
 const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestFormProps) => {
