@@ -132,7 +132,7 @@ export async function generatePDF(data: PaymentRequest): Promise<Uint8Array> {
   drawTable([
     ['Subtotal', `$${data.subtotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`],
     ['Impuestos', `$${data.impuestos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`],
-    ['Monto Total Solicitado', `$${data.montoTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`],
+    ['Monto Total Solicitado', `$${data.montoTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`, undefined, true],
   ]);
 
   // Table 5
