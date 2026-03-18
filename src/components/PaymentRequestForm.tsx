@@ -204,7 +204,17 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
               </div>
               <div className="space-y-2">
                 <Label>Moneda</Label>
-                <Select value={moneda} onValueChange={(v) => setMoneda(v as Moneda)}>
+                <Select value={moneda} onValueChange={(v) => {
+                  const m = v as Moneda;
+                  setMoneda(m);
+                  const sub = parseFloat(subtotal);
+                  if (!isNaN(sub)) {
+                    const taxRate = m === 'USD' || m === 'EUR' ? 0 : 0.16;
+                    const tax = (sub * taxRate).toFixed(2);
+                    setImpuestos(tax);
+                    setMontoTotal((sub + parseFloat(tax)).toFixed(2));
+                  }
+                }}>
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar" />
                   </SelectTrigger>
@@ -239,7 +249,8 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
                   setSubtotal(val);
                   const sub = parseFloat(val);
                   if (!isNaN(sub)) {
-                    const tax = (sub * 0.16).toFixed(2);
+                    const taxRate = moneda === 'USD' || moneda === 'EUR' ? 0 : 0.16;
+                    const tax = (sub * taxRate).toFixed(2);
                     setImpuestos(tax);
                     setMontoTotal((sub + parseFloat(tax)).toFixed(2));
                   }
