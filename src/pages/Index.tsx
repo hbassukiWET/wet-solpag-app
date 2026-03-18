@@ -114,10 +114,6 @@ const Index = () => {
     setConfirmation(null);
   }, []);
 
-  const handleUpdateConsecutivo = useCallback((newValue: number) => {
-    setConsecutivo(newValue);
-    toast.success(`Consecutivo actualizado a ${String(newValue).padStart(3, '0')}`);
-  }, []);
 
   if (!user) {
     return <LoginPage onLogin={handleLogin} error={loginError} />;
