@@ -66,14 +66,15 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
     }
   };
 
-  const handleSubmit = async () => {
+  const handlePreSubmit = () => {
     if (!empresa || !ordenCompra || !fechaPago || !transferenciaNombre || !moneda || !cuentaBanco || !conceptoPago || !subtotal || !impuestos || !montoTotal) {
       alert('Por favor completa todos los campos obligatorios');
       return;
     }
+    setShowSubmitConfirm(true);
+  };
 
-
-
+  const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
       await onSubmit({
@@ -81,7 +82,7 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
         empresa: empresa as Empresa,
         ordenCompra,
         fechaSolicitud,
-        fechaPagoTentativa: fechaPago,
+        fechaPagoTentativa: fechaPago!,
         transferenciaNombre,
         moneda: moneda as Moneda,
         cuentaBanco,
@@ -97,6 +98,7 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
       alert('Error al generar la solicitud');
     } finally {
       setIsSubmitting(false);
+      setShowSubmitConfirm(false);
       setShowConfirmModal(false);
     }
   };
