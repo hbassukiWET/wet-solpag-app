@@ -65,13 +65,12 @@ export async function generatePDF(data: PaymentRequest): Promise<Uint8Array> {
   const tableX = 60;
   const tableWidth = 492;
   const col1Width = 200;
-  const rowHeight = 28;
+  const col2Width = tableWidth - col1Width;
+  const minRowHeight = 28;
   const cellPadding = 10;
-  const dividerColor = rgb(0.82, 0.82, 0.84);
+  const fontSize = 9;
+  const lineHeight = 13;
 
-  // Soft accent for highlighted rows (~12% opacity blend with white)
-  const accentR = 'red' in accentColor ? 0 : 0;
-  // Use a helper to create light accent
   const blendWithWhite = (c: Color, opacity: number): Color => {
     const r = (c as any).red ?? 0.5;
     const g = (c as any).green ?? 0.5;
@@ -80,33 +79,80 @@ export async function generatePDF(data: PaymentRequest): Promise<Uint8Array> {
   };
   const lightAccent = blendWithWhite(accentColor, 0.12);
 
+  // Word-wrap helper: splits text into lines that fit within maxWidth
+  const wrapText = (text: string, font: typeof helvetica, maxWidth: number): string[] => {
+    const words = text.split(' ');
+    const lines: string[] = [];
+    let current = '';
+    for (const word of words) {
+      const test = current ? `${current} ${word}` : word;
+      if (font.widthOfTextAtSize(test, fontSize) > maxWidth) {
+        if (current) lines.push(current);
+        // If a single word exceeds maxWidth, push it anyway (will be clipped but won't overflow other cells)
+        current = word;
+      } else {
+        current = test;
+      }
+    }
+    if (current) lines.push(current);
+    return lines.length ? lines : [''];
+  };
+
   // Helper: draw a table; rows can be [label, value, color?, highlight?]
   const drawTable = (rows: [string, string, Color?, boolean?][]) => {
     const borderColor = rgb(0.75, 0.75, 0.78);
-    page.drawRectangle({ x: tableX, y: y + rowHeight - 6, width: tableWidth, height: 0.75, color: borderColor });
 
-    rows.forEach((row, i) => {
-      const rowY = y - (i * rowHeight);
+    // Pre-calculate row heights based on wrapped text
+    const col1MaxW = col1Width - cellPadding * 2;
+    const col2MaxW = col2Width - cellPadding * 2;
+
+    const rowData = rows.map((row) => {
       const isHighlight = row[3] === true;
-      // Background
-      if (isHighlight) {
-        page.drawRectangle({ x: tableX, y: rowY - 6, width: tableWidth, height: rowHeight, color: lightAccent });
-      } else if (i % 2 === 0) {
-        page.drawRectangle({ x: tableX, y: rowY - 6, width: tableWidth, height: rowHeight, color: lightGray });
-      }
-      // Borders
-      page.drawRectangle({ x: tableX, y: rowY - 6, width: tableWidth, height: 0.75, color: borderColor });
-      page.drawRectangle({ x: tableX, y: rowY - 6, width: 0.75, height: rowHeight, color: borderColor });
-      page.drawRectangle({ x: tableX + tableWidth - 0.75, y: rowY - 6, width: 0.75, height: rowHeight, color: borderColor });
-      page.drawRectangle({ x: tableX + col1Width, y: rowY - 6, width: 0.75, height: rowHeight, color: borderColor });
-
       const labelFont = helveticaBold;
       const valueFont = isHighlight ? helveticaBold : helvetica;
-      const valueColor = isHighlight ? darkBlue : (row[2] || gray);
-      page.drawText(row[0], { x: tableX + cellPadding, y: rowY + 4, size: 9, font: labelFont, color: darkBlue });
-      page.drawText(row[1], { x: tableX + col1Width + cellPadding, y: rowY + 4, size: 9, font: valueFont, color: valueColor });
+      const labelLines = wrapText(row[0], labelFont, col1MaxW);
+      const valueLines = wrapText(row[1], valueFont, col2MaxW);
+      const textHeight = Math.max(labelLines.length, valueLines.length) * lineHeight;
+      const rh = Math.max(minRowHeight, textHeight + cellPadding * 2);
+      return { row, isHighlight, labelFont, valueFont, labelLines, valueLines, height: rh };
     });
-    y -= rows.length * rowHeight + 30;
+
+    // Top border of table
+    page.drawRectangle({ x: tableX, y: y + minRowHeight - 6, width: tableWidth, height: 0.75, color: borderColor });
+
+    let cumulativeY = 0;
+    rowData.forEach((rd, i) => {
+      const rowY = y - cumulativeY;
+      const rh = rd.height;
+      const isHighlight = rd.isHighlight;
+
+      // Background
+      if (isHighlight) {
+        page.drawRectangle({ x: tableX, y: rowY - rh + minRowHeight - 6, width: tableWidth, height: rh, color: lightAccent });
+      } else if (i % 2 === 0) {
+        page.drawRectangle({ x: tableX, y: rowY - rh + minRowHeight - 6, width: tableWidth, height: rh, color: lightGray });
+      }
+
+      // Borders
+      page.drawRectangle({ x: tableX, y: rowY - rh + minRowHeight - 6, width: tableWidth, height: 0.75, color: borderColor });
+      page.drawRectangle({ x: tableX, y: rowY - rh + minRowHeight - 6, width: 0.75, height: rh, color: borderColor });
+      page.drawRectangle({ x: tableX + tableWidth - 0.75, y: rowY - rh + minRowHeight - 6, width: 0.75, height: rh, color: borderColor });
+      page.drawRectangle({ x: tableX + col1Width, y: rowY - rh + minRowHeight - 6, width: 0.75, height: rh, color: borderColor });
+
+      // Draw label lines
+      const valueColor = isHighlight ? darkBlue : (rd.row[2] || gray);
+      const textStartY = rowY + 4;
+      rd.labelLines.forEach((line, li) => {
+        page.drawText(line, { x: tableX + cellPadding, y: textStartY - li * lineHeight, size: fontSize, font: rd.labelFont, color: darkBlue });
+      });
+      // Draw value lines
+      rd.valueLines.forEach((line, li) => {
+        page.drawText(line, { x: tableX + col1Width + cellPadding, y: textStartY - li * lineHeight, size: fontSize, font: rd.valueFont, color: valueColor });
+      });
+
+      cumulativeY += rh;
+    });
+    y -= cumulativeY + 30;
   };
 
   // Table 1
