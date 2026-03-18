@@ -142,10 +142,7 @@ const Index = () => {
             />
           )
         ) : (
-          <AdminPanel
-            currentConsecutivo={consecutivo}
-            onUpdateConsecutivo={handleUpdateConsecutivo}
-          />
+          <AdminPanel />
         )}
       </main>
     </div>
