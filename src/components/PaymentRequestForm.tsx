@@ -78,6 +78,7 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [touched, setTouched] = useState<Set<FieldKey>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userEditedSP, setUserEditedSP] = useState(false);
 
   // Refs for scroll-to-first-error
   const fieldRefs = useRef<Partial<Record<FieldKey, HTMLDivElement | null>>>({});
@@ -176,6 +177,7 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
         montoTotal: parseFloat(montoTotal),
         comentarios: comentarios || undefined,
         documentoAdjunto: adjunto || undefined,
+        overwrite: userEditedSP,
       });
     } catch (err) {
       console.error(err);
@@ -444,6 +446,7 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
         if (!open) {
           setNumSP(autoNumSP);
           setPendingNumSP(null);
+          setUserEditedSP(false);
         }
         setShowConfirmModal(open);
       }}>
@@ -463,6 +466,7 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
               Cancelar
             </Button>
             <Button onClick={() => {
+              setUserEditedSP(true);
               setPendingNumSP(null);
               setShowConfirmModal(false);
             }}>

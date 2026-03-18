@@ -63,6 +63,7 @@ export async function saveRecord(data: {
   url_drive?: string;
   overwrite?: boolean;
 }): Promise<{ success: boolean }> {
+  console.log('saveRecord → overwrite:', data.overwrite);
   return callAppsScript({ action: 'saveRecord', ...data });
 }
 

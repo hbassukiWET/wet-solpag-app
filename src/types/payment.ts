@@ -16,6 +16,7 @@ export interface PaymentRequest {
   montoTotal: number;
   comentarios?: string;
   documentoAdjunto?: File;
+  overwrite?: boolean;
 }
 
 export interface UserProfile {
