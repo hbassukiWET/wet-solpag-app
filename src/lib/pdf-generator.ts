@@ -62,21 +62,6 @@ export async function generatePDF(data: PaymentRequest): Promise<Uint8Array> {
   // Moneda color
   const monedaColor = MONEDA_COLORS[data.moneda] || gray;
 
-  // Table rows
-  const rows: [string, string, Color?][] = [
-    ['Empresa', data.empresa],
-    ['Orden de Compra', data.ordenCompra],
-    ['Fecha de Solicitud', format(data.fechaSolicitud, "dd/MM/yyyy", { locale: es })],
-    ['Fecha de Pago Tentativa', format(data.fechaPagoTentativa, "dd/MM/yyyy", { locale: es })],
-    ['Transferencia a Nombre de', data.transferenciaNombre],
-    ['Moneda', data.moneda, monedaColor],
-    ['Cuenta de Banco', data.cuentaBanco],
-    ['Concepto de Pago', data.conceptoPago],
-    ['Subtotal', `$${data.subtotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`],
-    ['Impuestos', `$${data.impuestos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`],
-    ['Monto Total Solicitado', `$${data.montoTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`],
-  ];
-
   const tableX = 60;
   const tableWidth = 492;
   const col1Width = 200;
@@ -84,26 +69,45 @@ export async function generatePDF(data: PaymentRequest): Promise<Uint8Array> {
   const cellPadding = 10;
   const dividerColor = rgb(0.82, 0.82, 0.84);
 
-  rows.forEach((row, i) => {
-    const rowY = y - (i * rowHeight);
+  // Helper: draw a section with title + table rows
+  const drawSection = (title: string, rows: [string, string, Color?][]) => {
+    page.drawText(title, { x: tableX, y, size: 11, font: helveticaBold, color: accentColor });
+    y -= 5;
+    page.drawRectangle({ x: tableX, y, width: 140, height: 2, color: accentColor });
+    y -= 15;
 
-    // Alternating row background
-    if (i % 2 === 0) {
-      page.drawRectangle({ x: tableX, y: rowY - 6, width: tableWidth, height: rowHeight, color: lightGray });
-    }
+    rows.forEach((row, i) => {
+      const rowY = y - (i * rowHeight);
+      if (i % 2 === 0) {
+        page.drawRectangle({ x: tableX, y: rowY - 6, width: tableWidth, height: rowHeight, color: lightGray });
+      }
+      page.drawRectangle({ x: tableX, y: rowY - 6, width: tableWidth, height: 0.5, color: dividerColor });
+      page.drawText(row[0], { x: tableX + cellPadding, y: rowY + 4, size: 9, font: helveticaBold, color: darkBlue });
+      page.drawText(row[1], { x: tableX + col1Width + cellPadding, y: rowY + 4, size: 9, font: helvetica, color: row[2] || gray });
+    });
+    page.drawRectangle({ x: tableX, y: y - (rows.length * rowHeight) - 6 + rowHeight, width: tableWidth, height: 0.5, color: dividerColor });
+    y -= rows.length * rowHeight + 20;
+  };
 
-    // Row divider line
-    page.drawRectangle({ x: tableX, y: rowY - 6, width: tableWidth, height: 0.5, color: dividerColor });
+  drawSection('Datos de Solicitud', [
+    ['Empresa', data.empresa],
+    ['Orden de Compra', data.ordenCompra],
+    ['Fecha de Solicitud', format(data.fechaSolicitud, "dd/MM/yyyy", { locale: es })],
+    ['Fecha de Pago Tentativa', format(data.fechaPagoTentativa, "dd/MM/yyyy", { locale: es })],
+  ]);
 
-    page.drawText(row[0], { x: tableX + cellPadding, y: rowY + 4, size: 9, font: helveticaBold, color: darkBlue });
-    page.drawText(row[1], { x: tableX + col1Width + cellPadding, y: rowY + 4, size: 9, font: helvetica, color: row[2] || gray });
-  });
+  drawSection('Datos de Pago', [
+    ['Transferencia a Nombre de', data.transferenciaNombre],
+    ['Cuenta de Banco', data.cuentaBanco],
+    ['Moneda', data.moneda, monedaColor],
+    ['Concepto de Pago', data.conceptoPago],
+  ]);
 
-  // Bottom divider
-  const lastRowY = y - (rows.length * rowHeight);
-  page.drawRectangle({ x: tableX, y: lastRowY - 6 + rowHeight, width: tableWidth, height: 0.5, color: dividerColor });
-
-  y -= rows.length * rowHeight + 20;
+  drawSection('Montos', [
+    ['Subtotal', `$${data.subtotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`],
+    ['Impuestos', `$${data.impuestos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`],
+    ['Monto Total Solicitado', `$${data.montoTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`],
+  ]);
 
   // Comments section
   if (data.comentarios && data.comentarios.trim()) {
