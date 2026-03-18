@@ -464,6 +464,7 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
               Cancelar
             </Button>
             <Button onClick={() => {
+              setUserEditedSP(true);
               setPendingNumSP(null);
               setShowConfirmModal(false);
             }}>
