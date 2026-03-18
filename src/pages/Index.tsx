@@ -88,7 +88,7 @@ const Index = () => {
         documento: data.documentoAdjunto?.name || '',
         solicitante: user?.email || '',
         url_drive: driveUrl || '',
-        overwrite: false,
+        overwrite: data.overwrite ?? false,
       });
     } catch (err) {
       console.warn('No se pudo escribir en Sheets:', err);
