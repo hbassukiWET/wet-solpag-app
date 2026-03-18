@@ -208,11 +208,27 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>Subtotal</Label>
-                <Input type="number" step="0.01" value={subtotal} onChange={e => setSubtotal(e.target.value)} placeholder="0.00" />
+                <Input type="number" step="0.01" value={subtotal} onChange={e => {
+                  const val = e.target.value;
+                  setSubtotal(val);
+                  const sub = parseFloat(val);
+                  if (!isNaN(sub)) {
+                    const tax = (sub * 0.16).toFixed(2);
+                    setImpuestos(tax);
+                    setMontoTotal((sub + parseFloat(tax)).toFixed(2));
+                  }
+                }} placeholder="0.00" />
               </div>
               <div className="space-y-2">
-                <Label>Impuestos</Label>
-                <Input type="number" step="0.01" value={impuestos} onChange={e => setImpuestos(e.target.value)} placeholder="0.00" />
+                <Label>Impuestos (16%)</Label>
+                <Input type="number" step="0.01" value={impuestos} onChange={e => {
+                  setImpuestos(e.target.value);
+                  const sub = parseFloat(subtotal);
+                  const tax = parseFloat(e.target.value);
+                  if (!isNaN(sub) && !isNaN(tax)) {
+                    setMontoTotal((sub + tax).toFixed(2));
+                  }
+                }} placeholder="0.00" />
               </div>
               <div className="space-y-2">
                 <Label>Monto Total Solicitado</Label>
