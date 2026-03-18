@@ -28,6 +28,8 @@ function doPost(e) {
         return jsonResponse(writeRow(body.data));
       case 'saveRecord':
         return jsonResponse(saveRecord(body));
+      case 'getRecords':
+        return jsonResponse(getRecords());
       case 'uploadPDF':
         return jsonResponse(uploadPDF(body));
       default:
