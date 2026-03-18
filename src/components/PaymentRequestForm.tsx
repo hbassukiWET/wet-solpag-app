@@ -78,6 +78,7 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [touched, setTouched] = useState<Set<FieldKey>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userEditedSP, setUserEditedSP] = useState(false);
 
   // Refs for scroll-to-first-error
   const fieldRefs = useRef<Partial<Record<FieldKey, HTMLDivElement | null>>>({});
