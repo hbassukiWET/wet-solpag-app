@@ -17,6 +17,14 @@ interface SheetRecord {
   fecha_pago?: string;
 }
 
+const empresaBadgeStyles: Record<string, string> = {
+  WET: "bg-[#CC0000] text-white",
+  WEST: "bg-[#1B2A6B] text-white",
+  VCC: "bg-[#2E75B6] text-white",
+  ALDM: "bg-[#F5C400] text-black",
+  ITR: "bg-[#2E7D32] text-white",
+};
+
 const currencyBadgeStyles: Record<string, string> = {
   MXN: "bg-emerald-800 text-emerald-100",
   USD: "bg-emerald-500 text-white",
@@ -121,7 +129,15 @@ const AdminPanel = () => {
                     }`}
                   >
                     <TableCell className="font-mono font-bold px-5 py-3.5 whitespace-nowrap">{r.num_sp}</TableCell>
-                    <TableCell className="px-5 py-3.5">{r.empresa}</TableCell>
+                    <TableCell className="px-5 py-3.5">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                          empresaBadgeStyles[r.empresa] || "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {r.empresa}
+                      </span>
+                    </TableCell>
                     <TableCell className="px-5 py-3.5 max-w-[250px] truncate">{r.concepto_pago}</TableCell>
                     <TableCell className="text-right font-mono px-5 py-3.5 whitespace-nowrap">
                       {formatCurrency(r.monto_total, r.moneda)}
