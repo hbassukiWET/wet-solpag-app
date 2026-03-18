@@ -19,7 +19,13 @@ interface PaymentRequestFormProps {
   onSubmit: (data: PaymentRequest) => Promise<void>;
 }
 
-const EMPRESAS: Empresa[] = ['WET', 'WEST', 'VCC', 'TREBOL', 'ALDIM'];
+const EMPRESAS_INFO: { code: Empresa; name: string; color: string }[] = [
+  { code: 'WET', name: 'Wilbur Eagle Technology', color: 'bg-red-500' },
+  { code: 'WEST', name: 'West Energy', color: 'bg-blue-900' },
+  { code: 'VCC', name: 'Victoria Connysys', color: 'bg-blue-500' },
+  { code: 'ALDM', name: 'Aldim Energy', color: 'bg-yellow-500' },
+  { code: 'ITR', name: 'Inmobiliaria Trebol', color: 'bg-green-500' },
+];
 const MONEDAS: Moneda[] = ['MXN', 'USD', 'EUR'];
 
 const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestFormProps) => {
@@ -125,11 +131,28 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
                 <Label>Empresa</Label>
                 <Select value={empresa} onValueChange={(v) => setEmpresa(v as Empresa)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar empresa" />
+                    <SelectValue placeholder="Seleccionar empresa">
+                      {empresa && (() => {
+                        const info = EMPRESAS_INFO.find(e => e.code === empresa);
+                        return info ? (
+                          <span className="flex items-center gap-2">
+                            <span className={`inline-block w-2.5 h-2.5 rounded-full ${info.color}`} />
+                            <span className="font-medium">{info.code}</span>
+                            <span className="text-muted-foreground">— {info.name}</span>
+                          </span>
+                        ) : null;
+                      })()}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {EMPRESAS.map(e => (
-                      <SelectItem key={e} value={e}>{e}</SelectItem>
+                    {EMPRESAS_INFO.map(e => (
+                      <SelectItem key={e.code} value={e.code}>
+                        <span className="flex items-center gap-2">
+                          <span className={`inline-block w-2.5 h-2.5 rounded-full ${e.color}`} />
+                          <span className="font-medium">{e.code}</span>
+                          <span className="text-muted-foreground">— {e.name}</span>
+                        </span>
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
