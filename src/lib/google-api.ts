@@ -1,20 +1,16 @@
 /**
  * Frontend service to call the Google Apps Script backend.
- * 
- * After deploying the Apps Script, paste your web app URL below.
  */
 
-const APPS_SCRIPT_URL = import.meta.env.VITE_APPS_SCRIPT_URL || '';
+const APPS_SCRIPT_URL =
+  import.meta.env.VITE_APPS_SCRIPT_URL ||
+  'https://script.google.com/macros/s/AKfycbyFEvte_P8ruYO40uZTGJshP2jVkeSz4qMIYjE-ZwUsEpDqZ-TcJcS9dsyDLWrsp-mF/exec';
 
-async function callAppsScript<T = unknown>(action: string, data?: Record<string, unknown>): Promise<T> {
-  if (!APPS_SCRIPT_URL) {
-    throw new Error('VITE_APPS_SCRIPT_URL no está configurada. Despliega el Apps Script y añade la URL.');
-  }
-
+async function callAppsScript<T = unknown>(payload: Record<string, unknown>): Promise<T> {
   const res = await fetch(APPS_SCRIPT_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'text/plain' }, // Apps Script needs text/plain to avoid CORS preflight
-    body: JSON.stringify({ action, data }),
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(payload),
   });
 
   if (!res.ok) {
@@ -26,12 +22,29 @@ async function callAppsScript<T = unknown>(action: string, data?: Record<string,
 
 /** Read the last consecutivo from Sheet column A */
 export async function fetchConsecutivo(): Promise<number> {
-  const result = await callAppsScript<{ consecutivo: number }>('getConsecutivo');
+  const result = await callAppsScript<{ consecutivo: number }>({ action: 'getConsecutivo' });
   return result.consecutivo;
 }
 
+/** Upload a PDF (as base64) to Google Drive and return the URL */
+export async function uploadPDFToDrive(
+  fileName: string,
+  pdfBytes: Uint8Array
+): Promise<{ success: boolean; url: string }> {
+  const base64 = uint8ArrayToBase64(pdfBytes);
+  return callAppsScript('uploadPDF' as never) as never;
+}
+
+export async function uploadPDF(
+  filename: string,
+  pdfBytes: Uint8Array
+): Promise<{ url: string }> {
+  const pdfBase64 = uint8ArrayToBase64(pdfBytes);
+  return callAppsScript<{ url: string }>({ action: 'uploadPDF', pdfBase64, filename });
+}
+
 /** Write a new row to the Sheet */
-export async function writeSheetRow(data: {
+export async function saveRecord(data: {
   numSP: string;
   empresa: string;
   ordenCompra: string;
@@ -46,19 +59,10 @@ export async function writeSheetRow(data: {
   cuentaBanco: string;
   comentarios?: string;
   email?: string;
-  driveUrl?: string;
+  url_drive?: string;
+  overwrite?: boolean;
 }): Promise<{ success: boolean; spCode: string; row: number }> {
-  return callAppsScript('writeRow', data);
-}
-
-/** Upload a PDF (as base64) to Google Drive and return the URL */
-export async function uploadPDFToDrive(
-  fileName: string,
-  pdfBytes: Uint8Array
-): Promise<{ success: boolean; fileId: string; url: string; downloadUrl: string }> {
-  // Convert Uint8Array to base64
-  const base64 = uint8ArrayToBase64(pdfBytes);
-  return callAppsScript('uploadPDF', { fileName, base64Content: base64 });
+  return callAppsScript({ action: 'saveRecord', ...data });
 }
 
 function uint8ArrayToBase64(bytes: Uint8Array): string {
