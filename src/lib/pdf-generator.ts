@@ -61,7 +61,7 @@ export async function generatePDF(data: PaymentRequest): Promise<Uint8Array> {
     const logoH = logoImage.height * logoScale;
     const logoX = (612 - logoW) / 2;
     page.drawImage(logoImage, { x: logoX, y: y - logoH, width: logoW, height: logoH });
-    y -= logoH + 20;
+    y -= logoH + 44;
   } catch {
     // Fallback: draw placeholder rectangle with empresa code
     const logoW = 120;
