@@ -80,6 +80,13 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userEditedSP, setUserEditedSP] = useState(false);
 
+  // Sync numSP when consecutivo loads from server (only if user hasn't edited it)
+  useEffect(() => {
+    if (!userEditedSP) {
+      setNumSP(autoNumSP);
+    }
+  }, [autoNumSP, userEditedSP]);
+
   // Refs for scroll-to-first-error
   const fieldRefs = useRef<Partial<Record<FieldKey, HTMLDivElement | null>>>({});
 
