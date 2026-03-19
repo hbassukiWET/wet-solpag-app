@@ -14,8 +14,8 @@ const LoginPage = () => {
 
       <Card className="w-full max-w-md glass-card relative z-10">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto w-16 h-16 rounded-2xl bg-primary flex items-center justify-center">
-            <Shield className="w-8 h-8 text-primary-foreground" />
+          <div className="mx-auto w-16 h-16 rounded-2xl bg-primary flex items-center justify-center p-2">
+            <img src="/favicon-32x32.png" alt="Logo" className="w-8 h-8" />
           </div>
           <CardTitle className="text-2xl font-heading">Solicitud de Pago</CardTitle>
           <CardDescription className="text-base">
