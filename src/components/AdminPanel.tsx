@@ -51,6 +51,10 @@ const AdminPanel = () => {
   const [records, setRecords] = useState<SheetRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filterEmpresa, setFilterEmpresa] = useState<string>("all");
+  const [filterNombre, setFilterNombre] = useState("");
+  const [filterFecha, setFilterFecha] = useState("");
+  const [filterNumSP, setFilterNumSP] = useState("");
 
   const loadRecords = async () => {
     setLoading(true);
