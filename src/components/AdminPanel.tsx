@@ -95,7 +95,10 @@ const AdminPanel = () => {
     return records.filter((r) => {
       if (filterEmpresa !== "all" && r.empresa !== filterEmpresa) return false;
       if (filterNombre && !(r.transferencia_nombre || "").toLowerCase().includes(filterNombre.toLowerCase())) return false;
-      if (filterFecha && !formatDateOnly(r.fecha_pago || r.marca_temporal).includes(filterFecha)) return false;
+      if (filterFecha) {
+        const filterStr = format(filterFecha, "dd/MM/yyyy");
+        if (formatDateOnly(r.fecha_pago || r.marca_temporal) !== filterStr) return false;
+      }
       if (filterNumSP && !r.num_sp.toLowerCase().includes(filterNumSP.toLowerCase())) return false;
       return true;
     });
