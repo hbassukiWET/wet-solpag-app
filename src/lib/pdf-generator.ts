@@ -7,7 +7,7 @@ const EMPRESA_LOGOS: Record<Empresa, string> = {
   WET: "/logo_wet.png",
   WEST: "/logo_west.png",
   VCC: "/logo_vcc.png",
-  ALDM: "/logo_aldm.png",
+  ALDM: "/logo_aldim.png",
   ITR: "/logo_itr.png",
 };
 
