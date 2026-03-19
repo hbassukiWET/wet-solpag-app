@@ -190,8 +190,10 @@ const AdminPanel = () => {
               <Skeleton key={i} className="h-12 w-full" />
             ))}
           </div>
-        ) : records.length === 0 && !error ? (
-          <p className="text-sm text-muted-foreground text-center py-8">No hay registros.</p>
+        ) : filteredRecords.length === 0 && !error ? (
+          <p className="text-sm text-muted-foreground text-center py-8">
+            {hasActiveFilters ? "No se encontraron registros con los filtros aplicados." : "No hay registros."}
+          </p>
         ) : (
           <div className="overflow-x-auto">
             <Table>
