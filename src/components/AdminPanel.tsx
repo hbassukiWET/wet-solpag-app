@@ -210,7 +210,7 @@ const AdminPanel = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {records.map((r, i) => (
+                {filteredRecords.map((r, i) => (
                   <TableRow
                     key={i}
                     className={`border-b border-border/40 transition-colors ${
