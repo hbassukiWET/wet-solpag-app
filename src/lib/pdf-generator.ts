@@ -48,14 +48,30 @@ export async function generatePDF(data: PaymentRequest): Promise<Uint8Array> {
 
   let y = height - 60;
 
-  // Logo placeholder
-  const logoW = 120;
-  const logoH = 60;
-  const logoX = (612 - logoW) / 2;
-  page.drawRectangle({ x: logoX, y: y - logoH, width: logoW, height: logoH, color: rgb(0.85, 0.85, 0.85) });
-  const codeWidth = helveticaBold.widthOfTextAtSize(data.empresa, 14);
-  page.drawText(data.empresa, { x: logoX + (logoW - codeWidth) / 2, y: y - logoH / 2 - 5, size: 14, font: helveticaBold, color: darkBlue });
-  y -= logoH + 20;
+  // Embed company logo
+  const logoMaxW = 150;
+  const logoMaxH = 70;
+  try {
+    const logoPath = EMPRESA_LOGOS[data.empresa];
+    const logoResponse = await fetch(logoPath);
+    const logoArrayBuffer = await logoResponse.arrayBuffer();
+    const logoImage = await pdfDoc.embedPng(new Uint8Array(logoArrayBuffer));
+    const logoScale = Math.min(logoMaxW / logoImage.width, logoMaxH / logoImage.height);
+    const logoW = logoImage.width * logoScale;
+    const logoH = logoImage.height * logoScale;
+    const logoX = (612 - logoW) / 2;
+    page.drawImage(logoImage, { x: logoX, y: y - logoH, width: logoW, height: logoH });
+    y -= logoH + 20;
+  } catch {
+    // Fallback: draw placeholder rectangle with empresa code
+    const logoW = 120;
+    const logoH = 60;
+    const logoX = (612 - logoW) / 2;
+    page.drawRectangle({ x: logoX, y: y - logoH, width: logoW, height: logoH, color: rgb(0.85, 0.85, 0.85) });
+    const codeWidth = helveticaBold.widthOfTextAtSize(data.empresa, 14);
+    page.drawText(data.empresa, { x: logoX + (logoW - codeWidth) / 2, y: y - logoH / 2 - 5, size: 14, font: helveticaBold, color: darkBlue });
+    y -= logoH + 20;
+  }
 
   // Title
   const title = `Solicitud de Pago #${data.numSP.padStart(3, '0')}`;
