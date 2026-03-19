@@ -58,7 +58,44 @@ export async function uploadPDF(
   pdfBytes: Uint8Array
 ): Promise<{ url: string }> {
   const base64Content = uint8ArrayToBase64(pdfBytes);
-  return callAppsScript<{ url: string }>({ action: 'uploadPDF', base64Content, fileName: filename });
+
+  const parseUploadUrl = (result: Record<string, unknown>): string | undefined => {
+    if (typeof result.url === 'string' && result.url.trim().length > 0) return result.url;
+    if (typeof result.downloadUrl === 'string' && result.downloadUrl.trim().length > 0) return result.downloadUrl;
+    if (typeof result.driveUrl === 'string' && result.driveUrl.trim().length > 0) return result.driveUrl;
+    return undefined;
+  };
+
+  try {
+    const topLevel = await callAppsScript<Record<string, unknown>>({
+      action: 'uploadPDF',
+      base64Content,
+      fileName: filename,
+    });
+
+    const url = parseUploadUrl(topLevel);
+    if (url) return { url };
+  } catch {
+    // Fallback below
+  }
+
+  const nested = await callAppsScript<Record<string, unknown>>({
+    action: 'uploadPDF',
+    data: { base64Content, fileName: filename },
+  });
+
+  const fallbackUrl = parseUploadUrl(nested);
+  if (fallbackUrl) return { url: fallbackUrl };
+
+  throw new Error('No se recibió URL del PDF desde Apps Script');
+}
+
+function extractNumericSP(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return trimmed;
+
+  const matches = trimmed.match(/\d+/g);
+  return matches && matches.length > 0 ? matches[matches.length - 1] : trimmed;
 }
 
 /** Write a new row to the Sheet */
@@ -81,8 +118,22 @@ export async function saveRecord(data: {
   url_drive?: string;
   overwrite?: boolean;
 }): Promise<{ success: boolean }> {
-  console.log('saveRecord → overwrite:', data.overwrite);
-  return callAppsScript({ action: 'saveRecord', ...data });
+  const numericSP = extractNumericSP(data.num_sp);
+
+  return callAppsScript({
+    action: 'saveRecord',
+    ...data,
+    num_sp: numericSP,
+    numSP: numericSP,
+    ordenCompra: data.orden_compra,
+    fechaSolicitud: data.fecha_solicitud,
+    fechaPago: data.fecha_pago,
+    transferenciaNombre: data.transferencia_nombre,
+    cuentaBanco: data.cuenta_banco,
+    conceptoPago: data.concepto_pago,
+    montoTotal: data.monto_total,
+    driveUrl: data.url_drive || '',
+  });
 }
 
 /** Fetch all records from the Sheet */
