@@ -3,6 +3,14 @@ import type { Empresa, PaymentRequest } from "@/types/payment";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
+const EMPRESA_LOGOS: Record<Empresa, string> = {
+  WET: "/logo_wet.png",
+  WEST: "/logo_west.png",
+  VCC: "/logo_vcc.png",
+  ALDM: "/logo_aldm.png",
+  ITR: "/logo_itr.png",
+};
+
 const EMPRESA_COLORS: Record<Empresa, Color> = {
   WET: rgb(0.8, 0, 0),           // #CC0000
   WEST: rgb(0.106, 0.165, 0.42), // #1B2A6B
