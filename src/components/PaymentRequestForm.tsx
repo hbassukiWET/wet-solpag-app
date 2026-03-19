@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -79,6 +79,13 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
   const [touched, setTouched] = useState<Set<FieldKey>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userEditedSP, setUserEditedSP] = useState(false);
+
+  // Sync numSP when consecutivo loads from server (only if user hasn't edited it)
+  useEffect(() => {
+    if (!userEditedSP) {
+      setNumSP(autoNumSP);
+    }
+  }, [autoNumSP, userEditedSP]);
 
   // Refs for scroll-to-first-error
   const fieldRefs = useRef<Partial<Record<FieldKey, HTMLDivElement | null>>>({});
