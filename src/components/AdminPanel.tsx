@@ -58,7 +58,7 @@ const AdminPanel = () => {
   const [error, setError] = useState<string | null>(null);
   const [filterEmpresa, setFilterEmpresa] = useState<string>("all");
   const [filterNombre, setFilterNombre] = useState("");
-  const [filterFecha, setFilterFecha] = useState("");
+  const [filterFecha, setFilterFecha] = useState<Date | undefined>(undefined);
   const [filterNumSP, setFilterNumSP] = useState("");
 
   const loadRecords = async () => {
