@@ -55,13 +55,6 @@ const FieldError = ({ show }: { show: boolean }) =>
 const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestFormProps) => {
   const autoNumSP = String(currentConsecutivo).padStart(3, '0');
   const [numSP, setNumSP] = useState(autoNumSP);
-
-  // Sync numSP when consecutivo loads from server (only if user hasn't edited it)
-  useEffect(() => {
-    if (!userEditedSP) {
-      setNumSP(autoNumSP);
-    }
-  }, [autoNumSP, userEditedSP]);
   const [empresa, setEmpresa] = useState<Empresa | ''>('');
   const [ordenCompra, setOrdenCompra] = useState('');
   const [fechaSolicitud, setFechaSolicitud] = useState<Date>(new Date());
