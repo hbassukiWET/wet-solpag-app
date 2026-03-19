@@ -148,11 +148,10 @@ function jsonResponse(data, code) {
  */
 function saveRecord(data) {
   const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
-  const yy = new Date().getFullYear().toString().slice(-2);
-  const spCode = 'SP-' + yy + '_' + String(data.num_sp).padStart(3, '0');
+  const numOnly = String(Number(data.num_sp));
 
   const row = [
-    spCode,
+    numOnly,
     new Date().toISOString(),        // Marca_Temporal
     data.empresa || '',
     data.orden_compra || '',
@@ -177,11 +176,10 @@ function saveRecord(data) {
     if (lastRow > 1) {
       const spValues = sheet.getRange('A2:A' + lastRow).getValues();
       for (var i = 0; i < spValues.length; i++) {
-        if (String(spValues[i][0]).trim() === spCode) {
-          // Sobreescribir fila existente (i+2 porque empieza en fila 2)
+        if (String(spValues[i][0]).trim() === numOnly) {
           var targetRow = i + 2;
           sheet.getRange(targetRow, 1, 1, row.length).setValues([row]);
-          return { success: true, spCode: spCode, row: targetRow, overwritten: true };
+          return { success: true, spCode: numOnly, row: targetRow, overwritten: true };
         }
       }
     }
@@ -189,7 +187,7 @@ function saveRecord(data) {
 
   // Si no se encontró o overwrite=false, agregar fila nueva
   sheet.appendRow(row);
-  return { success: true, spCode: spCode, row: sheet.getLastRow(), overwritten: false };
+  return { success: true, spCode: numOnly, row: sheet.getLastRow(), overwritten: false };
 }
 
 /**
