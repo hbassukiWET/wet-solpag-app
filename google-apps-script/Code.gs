@@ -176,11 +176,10 @@ function saveRecord(data) {
     if (lastRow > 1) {
       const spValues = sheet.getRange('A2:A' + lastRow).getValues();
       for (var i = 0; i < spValues.length; i++) {
-        if (String(spValues[i][0]).trim() === spCode) {
-          // Sobreescribir fila existente (i+2 porque empieza en fila 2)
+        if (String(spValues[i][0]).trim() === numOnly) {
           var targetRow = i + 2;
           sheet.getRange(targetRow, 1, 1, row.length).setValues([row]);
-          return { success: true, spCode: spCode, row: targetRow, overwritten: true };
+          return { success: true, spCode: numOnly, row: targetRow, overwritten: true };
         }
       }
     }
