@@ -172,13 +172,31 @@ const AdminPanel = () => {
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted-foreground">Fecha (DD/MM/YYYY)</label>
-            <Input
-              placeholder="ej. 15/03/2025"
-              value={filterFecha}
-              onChange={(e) => setFilterFecha(e.target.value)}
-              className="h-9 w-40"
-            />
+            <label className="text-xs font-medium text-muted-foreground">Fecha</label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "h-9 w-44 justify-start text-left font-normal",
+                    !filterFecha && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {filterFecha ? format(filterFecha, "dd/MM/yyyy") : "Seleccionar..."}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={filterFecha}
+                  onSelect={(date) => setFilterFecha(date)}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                  locale={es}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
           {hasActiveFilters && (
             <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 gap-1 text-muted-foreground">
