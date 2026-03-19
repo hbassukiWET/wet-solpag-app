@@ -187,7 +187,7 @@ function saveRecord(data) {
 
   // Si no se encontró o overwrite=false, agregar fila nueva
   sheet.appendRow(row);
-  return { success: true, spCode: spCode, row: sheet.getLastRow(), overwritten: false };
+  return { success: true, spCode: numOnly, row: sheet.getLastRow(), overwritten: false };
 }
 
 /**

@@ -57,8 +57,8 @@ export async function uploadPDF(
   filename: string,
   pdfBytes: Uint8Array
 ): Promise<{ url: string }> {
-  const pdfBase64 = uint8ArrayToBase64(pdfBytes);
-  return callAppsScript<{ url: string }>({ action: 'uploadPDF', pdfBase64, filename });
+  const base64Content = uint8ArrayToBase64(pdfBytes);
+  return callAppsScript<{ url: string }>({ action: 'uploadPDF', base64Content, fileName: filename });
 }
 
 /** Write a new row to the Sheet */
