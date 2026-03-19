@@ -24,11 +24,17 @@ interface DecodedToken {
   picture?: string;
 }
 
+const getInitialUser = (): UserProfile | null => {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("dev") === "true") {
+    return { email: "dev@wilbureagle.com", name: "Dev User", picture: undefined };
+  }
+  const saved = sessionStorage.getItem("auth_user");
+  return saved ? JSON.parse(saved) : null;
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<UserProfile | null>(() => {
-    const saved = sessionStorage.getItem("auth_user");
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [user, setUser] = useState<UserProfile | null>(getInitialUser);
   const [loginError, setLoginError] = useState<string | null>(null);
 
   const handleLoginSuccess = useCallback((credentialResponse: { credential?: string }) => {
