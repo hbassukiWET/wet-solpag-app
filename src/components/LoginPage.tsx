@@ -36,7 +36,6 @@ const LoginPage = () => {
               theme="outline"
               size="large"
               text="signin_with"
-              locale="es"
               width="320"
             />
           </div>
