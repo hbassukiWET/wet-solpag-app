@@ -148,11 +148,10 @@ function jsonResponse(data, code) {
  */
 function saveRecord(data) {
   const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
-  const yy = new Date().getFullYear().toString().slice(-2);
-  const spCode = 'SP-' + yy + '_' + String(data.num_sp).padStart(3, '0');
+  const numOnly = String(Number(data.num_sp));
 
   const row = [
-    spCode,
+    numOnly,
     new Date().toISOString(),        // Marca_Temporal
     data.empresa || '',
     data.orden_compra || '',
