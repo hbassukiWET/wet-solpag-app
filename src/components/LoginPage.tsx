@@ -15,7 +15,7 @@ const LoginPage = () => {
       <Card className="w-full max-w-md glass-card relative z-10">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto w-20 h-20 flex items-center justify-center">
-            <img src="/logo_wet.png" alt="WET Logo" className="w-full h-full object-contain" />
+            <img src="/EAGLE.png" alt="Eagle Logo" className="w-full h-full object-contain" />
           </div>
           <CardTitle className="text-2xl font-heading">Solicitud de Pago</CardTitle>
           <CardDescription className="text-base">
