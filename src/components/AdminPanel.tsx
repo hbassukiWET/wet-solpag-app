@@ -109,7 +109,7 @@ const AdminPanel = () => {
   const clearFilters = () => {
     setFilterEmpresa("all");
     setFilterNombre("");
-    setFilterFecha("");
+    setFilterFecha(undefined);
     setFilterNumSP("");
   };
 
