@@ -4,7 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RefreshCw, FileText, Search, X } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { RefreshCw, FileText, X, CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 import { fetchRecords } from "@/lib/google-api";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -53,7 +58,7 @@ const AdminPanel = () => {
   const [error, setError] = useState<string | null>(null);
   const [filterEmpresa, setFilterEmpresa] = useState<string>("all");
   const [filterNombre, setFilterNombre] = useState("");
-  const [filterFecha, setFilterFecha] = useState("");
+  const [filterFecha, setFilterFecha] = useState<Date | undefined>(undefined);
   const [filterNumSP, setFilterNumSP] = useState("");
 
   const loadRecords = async () => {
@@ -90,18 +95,21 @@ const AdminPanel = () => {
     return records.filter((r) => {
       if (filterEmpresa !== "all" && r.empresa !== filterEmpresa) return false;
       if (filterNombre && !(r.transferencia_nombre || "").toLowerCase().includes(filterNombre.toLowerCase())) return false;
-      if (filterFecha && !formatDateOnly(r.fecha_pago || r.marca_temporal).includes(filterFecha)) return false;
+      if (filterFecha) {
+        const filterStr = format(filterFecha, "dd/MM/yyyy");
+        if (formatDateOnly(r.fecha_pago || r.marca_temporal) !== filterStr) return false;
+      }
       if (filterNumSP && !r.num_sp.toLowerCase().includes(filterNumSP.toLowerCase())) return false;
       return true;
     });
   }, [records, filterEmpresa, filterNombre, filterFecha, filterNumSP]);
 
-  const hasActiveFilters = filterEmpresa !== "all" || filterNombre || filterFecha || filterNumSP;
+  const hasActiveFilters = filterEmpresa !== "all" || filterNombre || !!filterFecha || filterNumSP;
 
   const clearFilters = () => {
     setFilterEmpresa("all");
     setFilterNombre("");
-    setFilterFecha("");
+    setFilterFecha(undefined);
     setFilterNumSP("");
   };
 
@@ -164,13 +172,31 @@ const AdminPanel = () => {
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted-foreground">Fecha (DD/MM/YYYY)</label>
-            <Input
-              placeholder="ej. 15/03/2025"
-              value={filterFecha}
-              onChange={(e) => setFilterFecha(e.target.value)}
-              className="h-9 w-40"
-            />
+            <label className="text-xs font-medium text-muted-foreground">Fecha</label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "h-9 w-44 justify-start text-left font-normal",
+                    !filterFecha && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {filterFecha ? format(filterFecha, "dd/MM/yyyy") : "Seleccionar..."}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={filterFecha}
+                  onSelect={(date) => setFilterFecha(date)}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                  locale={es}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
           {hasActiveFilters && (
             <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 gap-1 text-muted-foreground">
