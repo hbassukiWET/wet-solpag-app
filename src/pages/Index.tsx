@@ -6,19 +6,18 @@ import AdminPanel from "@/components/AdminPanel";
 import ConfirmationScreen from "@/components/ConfirmationScreen";
 import { generatePDF, mergePDFs, generateFileName } from "@/lib/pdf-generator";
 import { fetchConsecutivo, uploadPDF, saveRecord } from "@/lib/google-api";
-import type { UserProfile, PaymentRequest } from "@/types/payment";
+import type { PaymentRequest } from "@/types/payment";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
 const Index = () => {
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [loginError, setLoginError] = useState<string | null>(null);
+  const { user, handleLogout } = useAuth();
   const [activeTab, setActiveTab] = useState<'form' | 'admin'>('form');
   const [consecutivo, setConsecutivo] = useState(70);
   const [confirmation, setConfirmation] = useState<{ numSP: string; driveUrl?: string } | null>(null);
 
-  // Load consecutivo from Google Sheets on mount
   useEffect(() => {
     fetchConsecutivo()
       .then(val => setConsecutivo(val))
@@ -27,23 +26,7 @@ const Index = () => {
       });
   }, []);
 
-  const handleLogin = useCallback(() => {
-    const mockEmail = "usuario@wilbureagle.com";
-    if (!mockEmail.endsWith("@wilbureagle.com")) {
-      setLoginError("Acceso denegado. Solo cuentas @wilbureagle.com pueden acceder.");
-      return;
-    }
-    setUser({ email: mockEmail, name: "Usuario Demo", picture: undefined });
-    setLoginError(null);
-  }, []);
-
-  const handleLogout = useCallback(() => {
-    setUser(null);
-    setConfirmation(null);
-  }, []);
-
   const handleSubmit = useCallback(async (data: PaymentRequest) => {
-    // 1. Generate PDF
     let pdfBytes = await generatePDF(data);
 
     if (data.documentoAdjunto) {
@@ -54,7 +37,6 @@ const Index = () => {
     const fileName = generateFileName(data);
     let driveUrl: string | undefined;
 
-    // 2. Upload PDF to Google Drive
     try {
       const driveResult = await uploadPDF(fileName, pdfBytes);
       driveUrl = driveResult.url;
@@ -69,7 +51,6 @@ const Index = () => {
       URL.revokeObjectURL(url);
     }
 
-    // 3. Write row to Google Sheets
     try {
       await saveRecord({
         num_sp: data.numSP,
@@ -94,12 +75,10 @@ const Index = () => {
       console.warn('No se pudo escribir en Sheets:', err);
     }
 
-    // 4. Refresh consecutivo from Sheets
     try {
       const newConsecutivo = await fetchConsecutivo();
       setConsecutivo(newConsecutivo);
     } catch {
-      // Fallback: increment locally
       const autoNum = String(consecutivo).padStart(3, '0');
       if (data.numSP === autoNum) {
         setConsecutivo(prev => prev + 1);
@@ -114,9 +93,8 @@ const Index = () => {
     setConfirmation(null);
   }, []);
 
-
   if (!user) {
-    return <LoginPage onLogin={handleLogin} error={loginError} />;
+    return <LoginPage />;
   }
 
   return (
