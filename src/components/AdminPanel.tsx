@@ -1,8 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, FileText, ExternalLink } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RefreshCw, FileText, Search, X } from "lucide-react";
 import { fetchRecords } from "@/lib/google-api";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -49,6 +51,10 @@ const AdminPanel = () => {
   const [records, setRecords] = useState<SheetRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filterEmpresa, setFilterEmpresa] = useState<string>("all");
+  const [filterNombre, setFilterNombre] = useState("");
+  const [filterFecha, setFilterFecha] = useState("");
+  const [filterNumSP, setFilterNumSP] = useState("");
 
   const loadRecords = async () => {
     setLoading(true);
@@ -80,6 +86,30 @@ const AdminPanel = () => {
     }
   };
 
+  const filteredRecords = useMemo(() => {
+    return records.filter((r) => {
+      if (filterEmpresa !== "all" && r.empresa !== filterEmpresa) return false;
+      if (filterNombre && !(r.transferencia_nombre || "").toLowerCase().includes(filterNombre.toLowerCase())) return false;
+      if (filterFecha && !formatDateOnly(r.fecha_pago || r.marca_temporal).includes(filterFecha)) return false;
+      if (filterNumSP && !r.num_sp.toLowerCase().includes(filterNumSP.toLowerCase())) return false;
+      return true;
+    });
+  }, [records, filterEmpresa, filterNombre, filterFecha, filterNumSP]);
+
+  const hasActiveFilters = filterEmpresa !== "all" || filterNombre || filterFecha || filterNumSP;
+
+  const clearFilters = () => {
+    setFilterEmpresa("all");
+    setFilterNombre("");
+    setFilterFecha("");
+    setFilterNumSP("");
+  };
+
+  const empresas = useMemo(() => {
+    const set = new Set(records.map((r) => r.empresa));
+    return Array.from(set).sort();
+  }, [records]);
+
   return (
     <Card className="glass-card overflow-hidden">
       <CardHeader className="flex flex-row items-center justify-between pb-4">
@@ -95,6 +125,61 @@ const AdminPanel = () => {
         </Button>
       </CardHeader>
       <CardContent className="p-0">
+        {/* Filters */}
+        <div className="px-5 pb-4 flex flex-wrap items-end gap-3">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-muted-foreground">Num SP</label>
+            <Input
+              placeholder="Buscar..."
+              value={filterNumSP}
+              onChange={(e) => setFilterNumSP(e.target.value)}
+              className="h-9 w-36"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-muted-foreground">Empresa</label>
+            <Select value={filterEmpresa} onValueChange={setFilterEmpresa}>
+              <SelectTrigger className="h-9 w-36">
+                <SelectValue placeholder="Todas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                {empresas.map((e) => (
+                  <SelectItem key={e} value={e}>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${empresaBadgeStyles[e] || ""}`}>
+                      {e}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-muted-foreground">Transferencia a Nombre de</label>
+            <Input
+              placeholder="Buscar..."
+              value={filterNombre}
+              onChange={(e) => setFilterNombre(e.target.value)}
+              className="h-9 w-48"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-muted-foreground">Fecha (DD/MM/YYYY)</label>
+            <Input
+              placeholder="ej. 15/03/2025"
+              value={filterFecha}
+              onChange={(e) => setFilterFecha(e.target.value)}
+              className="h-9 w-40"
+            />
+          </div>
+          {hasActiveFilters && (
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 gap-1 text-muted-foreground">
+              <X className="w-3.5 h-3.5" />
+              Limpiar
+            </Button>
+          )}
+        </div>
+
         {error && (
           <div className="text-sm text-destructive text-center py-8 px-6">{error}</div>
         )}
@@ -105,8 +190,10 @@ const AdminPanel = () => {
               <Skeleton key={i} className="h-12 w-full" />
             ))}
           </div>
-        ) : records.length === 0 && !error ? (
-          <p className="text-sm text-muted-foreground text-center py-8">No hay registros.</p>
+        ) : filteredRecords.length === 0 && !error ? (
+          <p className="text-sm text-muted-foreground text-center py-8">
+            {hasActiveFilters ? "No se encontraron registros con los filtros aplicados." : "No hay registros."}
+          </p>
         ) : (
           <div className="overflow-x-auto">
             <Table>
@@ -123,7 +210,7 @@ const AdminPanel = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {records.map((r, i) => (
+                {filteredRecords.map((r, i) => (
                   <TableRow
                     key={i}
                     className={`border-b border-border/40 transition-colors ${
