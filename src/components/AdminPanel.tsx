@@ -104,7 +104,7 @@ const AdminPanel = () => {
     });
   }, [records, filterEmpresa, filterNombre, filterFecha, filterNumSP]);
 
-  const hasActiveFilters = filterEmpresa !== "all" || filterNombre || filterFecha || filterNumSP;
+  const hasActiveFilters = filterEmpresa !== "all" || filterNombre || !!filterFecha || filterNumSP;
 
   const clearFilters = () => {
     setFilterEmpresa("all");
