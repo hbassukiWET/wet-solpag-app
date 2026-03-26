@@ -15,6 +15,7 @@
 const SHEET_ID = '1oH0s_0suWNYcO1eBoHF5ypTI68MZdUXVzZcLsGaK8HY';
 const DRIVE_FOLDER_ID = '1-9cDaNmwGd7simq8rDdBcTkJNQixoweY';
 const SHEET_NAME = 'Hoja 1'; // Ajusta al nombre de tu hoja
+const SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/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';
 
 function doPost(e) {
   try {
