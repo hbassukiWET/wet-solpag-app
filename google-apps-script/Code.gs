@@ -188,7 +188,22 @@ function saveRecord(data) {
 
   // Si no se encontró o overwrite=false, agregar fila nueva
   sheet.appendRow(row);
-  return { success: true, spCode: numOnly, row: sheet.getLastRow(), overwritten: false };
+  var result = { success: true, spCode: numOnly, row: sheet.getLastRow(), overwritten: false };
+
+  // Enviar notificación a Slack
+  try {
+    sendSlackNotification({
+      num_sp: numOnly,
+      concepto_pago: data.concepto_pago || data.conceptoPago || '',
+      comentarios: data.comentarios || '',
+      url_drive: data.url_drive || data.driveUrl || '',
+      documento: data.documento || '',
+    });
+  } catch (slackErr) {
+    Logger.log('Error enviando a Slack: ' + slackErr.message);
+  }
+
+  return result;
 }
 
 /**
