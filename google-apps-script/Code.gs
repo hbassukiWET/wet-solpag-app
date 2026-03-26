@@ -217,7 +217,34 @@ function getRecords() {
 
   if (lastRow <= 1) {
     return { records: [] };
+}
+
+/**
+ * Envía una notificación a Slack con los datos de la solicitud de pago.
+ */
+function sendSlackNotification(data) {
+  var fileName = data.documento || (data.num_sp + '_SOLPAG.pdf');
+  var message = ':page_facing_up: *NUEVA SOLICITUD DE PAGO*\n\n'
+    + '*Archivo:* ' + fileName + '\n'
+    + '*Concepto:* ' + (data.concepto_pago || 'N/A') + '\n';
+
+  if (data.comentarios && data.comentarios.trim().length > 0) {
+    message += '*Comentarios:* ' + data.comentarios + '\n';
   }
+
+  if (data.url_drive && data.url_drive.trim().length > 0) {
+    message += '*Ver PDF:* ' + data.url_drive + '\n';
+  }
+
+  var payload = { text: message };
+
+  UrlFetchApp.fetch(SLACK_WEBHOOK_URL, {
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true,
+  });
+}
 
   var data = sheet.getRange(2, 1, lastRow - 1, 17).getValues();
   var records = [];
