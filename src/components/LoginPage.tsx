@@ -41,6 +41,9 @@ const LoginPage = () => {
           <p className="text-xs text-muted-foreground text-center">
             Solo cuentas @wilbureagle.com
           </p>
+          <p className="text-[10px] text-muted-foreground/50 text-center pt-2">
+            V-1.0
+          </p>
         </CardContent>
       </Card>
     </div>
