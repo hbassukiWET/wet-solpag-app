@@ -15,6 +15,7 @@
 const SHEET_ID = '1oH0s_0suWNYcO1eBoHF5ypTI68MZdUXVzZcLsGaK8HY';
 const DRIVE_FOLDER_ID = '1-9cDaNmwGd7simq8rDdBcTkJNQixoweY';
 const SHEET_NAME = 'Hoja 1'; // Ajusta al nombre de tu hoja
+const SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/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';
 
 function doPost(e) {
   try {
@@ -187,7 +188,22 @@ function saveRecord(data) {
 
   // Si no se encontró o overwrite=false, agregar fila nueva
   sheet.appendRow(row);
-  return { success: true, spCode: numOnly, row: sheet.getLastRow(), overwritten: false };
+  var result = { success: true, spCode: numOnly, row: sheet.getLastRow(), overwritten: false };
+
+  // Enviar notificación a Slack
+  try {
+    sendSlackNotification({
+      num_sp: numOnly,
+      concepto_pago: data.concepto_pago || data.conceptoPago || '',
+      comentarios: data.comentarios || '',
+      url_drive: data.url_drive || data.driveUrl || '',
+      documento: data.documento || '',
+    });
+  } catch (slackErr) {
+    Logger.log('Error enviando a Slack: ' + slackErr.message);
+  }
+
+  return result;
 }
 
 /**
@@ -201,7 +217,34 @@ function getRecords() {
 
   if (lastRow <= 1) {
     return { records: [] };
+}
+
+/**
+ * Envía una notificación a Slack con los datos de la solicitud de pago.
+ */
+function sendSlackNotification(data) {
+  var fileName = data.documento || (data.num_sp + '_SOLPAG.pdf');
+  var message = ':page_facing_up: *NUEVA SOLICITUD DE PAGO*\n\n'
+    + '*Archivo:* ' + fileName + '\n'
+    + '*Concepto:* ' + (data.concepto_pago || 'N/A') + '\n';
+
+  if (data.comentarios && data.comentarios.trim().length > 0) {
+    message += '*Comentarios:* ' + data.comentarios + '\n';
   }
+
+  if (data.url_drive && data.url_drive.trim().length > 0) {
+    message += '*Ver PDF:* ' + data.url_drive + '\n';
+  }
+
+  var payload = { text: message };
+
+  UrlFetchApp.fetch(SLACK_WEBHOOK_URL, {
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true,
+  });
+}
 
   var data = sheet.getRange(2, 1, lastRow - 1, 17).getValues();
   var records = [];
