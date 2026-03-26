@@ -4,7 +4,7 @@
 
 const APPS_SCRIPT_URL =
   import.meta.env.VITE_APPS_SCRIPT_URL ||
-  'https://script.google.com/macros/s/AKfycbwZ1eRn_qvoydHVxIf_4gaDI9ll_VQC2T3f3uNJyv8BGb-ePacmGhhkGbcyw6N90SQ/exec';
+  'https://script.google.com/macros/s/AKfycbwxJ0PjdJxk9Fwpc0CdFjun67TU2djh4veu1J2BNtpC73c023YuGTCv4G6y3DlwoCyT/exec';
 
 type AppsScriptErrorPayload = {
   success?: boolean;
