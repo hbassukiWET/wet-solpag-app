@@ -1,27 +1,17 @@
 /**
  * Google Apps Script — Backend intermedio para Solicitudes de Pago
- * 
- * INSTRUCCIONES DE DESPLIEGUE:
- * 1. Ve a https://script.google.com y crea un nuevo proyecto
- * 2. Pega este código en Code.gs
- * 3. Configura las constantes SHEET_ID y DRIVE_FOLDER_ID abajo
- * 4. Despliega como "Aplicación web":
- *    - Ejecutar como: Tu cuenta
- *    - Acceso: Cualquiera (para permitir llamadas desde el frontend)
- * 5. Copia la URL del despliegue y pégala en tu proyecto Lovable
- *    como la variable APPS_SCRIPT_URL en src/lib/google-api.ts
  */
 
 const SHEET_ID = '1oH0s_0suWNYcO1eBoHF5ypTI68MZdUXVzZcLsGaK8HY';
 const DRIVE_FOLDER_ID = '1-9cDaNmwGd7simq8rDdBcTkJNQixoweY';
-const SHEET_NAME = 'Hoja 1'; // Ajusta al nombre de tu hoja
-const SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/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';
+const SHEET_NAME = 'Hoja 1';
+const SLACK_BOT_TOKEN = 'xoxb-8123766403011-10814720273552-1asfSHd9M8mMZelMj5q0LTm6';
+const SLACK_CHANNEL = 'C08HF9S0ZKQ';
 
 function doPost(e) {
   try {
     const body = JSON.parse(e.postData.contents);
     const action = body.action;
-
     switch (action) {
       case 'getConsecutivo':
         return jsonResponse(getConsecutivo());
@@ -42,7 +32,6 @@ function doPost(e) {
 }
 
 function doGet(e) {
-  // GET endpoint para leer consecutivo sin POST
   const action = e.parameter.action;
   if (action === 'getConsecutivo') {
     return jsonResponse(getConsecutivo());
@@ -50,25 +39,23 @@ function doGet(e) {
   return jsonResponse({ error: 'Usa POST para esta acción' }, 400);
 }
 
-/**
- * Lee la columna A y retorna el último consecutivo numérico
- */
+function jsonResponse(data, code) {
+  return ContentService
+    .createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// ─── CONSECUTIVO ───
+
 function getConsecutivo() {
   const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
   const lastRow = sheet.getLastRow();
-  
-  if (lastRow <= 1) {
-    // Solo hay encabezado o está vacía
-    return { consecutivo: 1 };
-  }
+  if (lastRow <= 1) return { consecutivo: 1 };
 
-  // Leer toda la columna A para encontrar el último número SP
   const values = sheet.getRange('A2:A' + lastRow).getValues();
   let maxNum = 0;
-
   for (let i = values.length - 1; i >= 0; i--) {
     const cell = String(values[i][0]).trim();
-    // Esperamos formato como "SP-25_070" o simplemente el número
     const match = cell.match(/SP-\d{2}_(\d{3})/);
     if (match) {
       const num = parseInt(match[1], 10);
@@ -78,100 +65,120 @@ function getConsecutivo() {
       if (!isNaN(num) && num > maxNum) maxNum = num;
     }
   }
-
   return { consecutivo: maxNum + 1 };
 }
 
-/**
- * Escribe una fila nueva en el Sheet
- * data: { numSP, empresa, ordenCompra, fechaSolicitud, fechaPago, 
- *         transferenciaNombre, moneda, conceptoPago, subtotal, impuestos,
- *         montoTotal, cuentaBanco, comentarios, email, driveUrl }
- */
+// ─── WRITE ROW ───
+
 function writeRow(data) {
   const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
   const yy = new Date().getFullYear().toString().slice(-2);
   const spCode = 'SP-' + yy + '_' + String(data.numSP).padStart(3, '0');
 
   const row = [
-    spCode,
-    data.empresa,
-    data.ordenCompra,
-    data.fechaSolicitud,
-    data.fechaPago,
-    data.transferenciaNombre,
-    data.moneda,
-    data.conceptoPago,
-    data.subtotal,
-    data.impuestos,
-    data.montoTotal,
-    data.cuentaBanco,
-    data.comentarios || '',
-    data.email || '',
-    data.driveUrl || '',
+    spCode, data.empresa, data.ordenCompra, data.fechaSolicitud,
+    data.fechaPago, data.transferenciaNombre, data.moneda, data.conceptoPago,
+    data.subtotal, data.impuestos, data.montoTotal, data.cuentaBanco,
+    data.comentarios || '', data.email || '', data.driveUrl || '',
     new Date().toISOString()
   ];
-
   sheet.appendRow(row);
   return { success: true, spCode: spCode, row: sheet.getLastRow() };
 }
 
-/**
- * Sube un PDF (base64) a Google Drive y retorna la URL
- * data: { fileName, base64Content }
- */
+// ─── UPLOAD PDF + SLACK ───
+
 function uploadPDF(data) {
   const folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
   const decoded = Utilities.base64Decode(data.base64Content);
   const blob = Utilities.newBlob(decoded, 'application/pdf', data.fileName);
   const file = folder.createFile(blob);
-  
-  // Hacer público (solo lectura) para que se pueda acceder con el link
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 
-  return {
+  var result = {
     success: true,
     fileId: file.getId(),
     url: file.getUrl(),
     downloadUrl: 'https://drive.google.com/uc?export=download&id=' + file.getId()
   };
-}
 
-function jsonResponse(data, code) {
-  return ContentService
-    .createTextOutput(JSON.stringify(data))
-    .setMimeType(ContentService.MimeType.JSON);
+  // Enviar PDF a Slack
+  try {
+    sendToSlack(file.getId(), data.fileName, data.comentarios || '');
+  } catch (slackErr) {
+    Logger.log('Error enviando a Slack: ' + slackErr.message);
+    result.slackError = slackErr.message;
+  }
+
+  return result;
 }
 
 /**
- * Guarda un registro en el Sheet. Si overwrite=true y el num_sp ya existe,
- * sobreescribe esa fila en lugar de agregar una nueva.
+ * Sube el PDF a Slack usando la Web API (files.getUploadURLExternal → upload → completeUploadExternal)
  */
+function sendToSlack(fileId, fileName, comentarios) {
+  var driveFile = DriveApp.getFileById(fileId);
+  var blob = driveFile.getBlob();
+  var bytes = blob.getBytes();
+  var headers = { 'Authorization': 'Bearer ' + SLACK_BOT_TOKEN };
+
+  // 1. Obtener URL de subida
+  var step1 = UrlFetchApp.fetch('https://slack.com/api/files.getUploadURLExternal', {
+    method: 'post',
+    headers: headers,
+    payload: { filename: fileName, length: String(bytes.length) },
+    muteHttpExceptions: true
+  });
+  var step1Data = JSON.parse(step1.getContentText());
+  if (!step1Data.ok) throw new Error('getUploadURLExternal: ' + (step1Data.error || 'unknown'));
+
+  var uploadUrl = step1Data.upload_url;
+  var fileIdSlack = step1Data.file_id;
+
+  // 2. Subir contenido del archivo
+  UrlFetchApp.fetch(uploadUrl, {
+    method: 'post',
+    contentType: 'application/pdf',
+    payload: bytes,
+    muteHttpExceptions: true
+  });
+
+  // 3. Completar subida y publicar en canal
+  var message = '*NUEVA SOLICITUD DE PAGO*\n\n' + fileName;
+  if (comentarios && comentarios.trim().length > 0) {
+    message += '\n\nComentarios: ' + comentarios;
+  }
+
+  var step3 = UrlFetchApp.fetch('https://slack.com/api/files.completeUploadExternal', {
+    method: 'post',
+    headers: headers,
+    contentType: 'application/json',
+    payload: JSON.stringify({
+      files: [{ id: fileIdSlack, title: fileName }],
+      channel_id: SLACK_CHANNEL,
+      initial_comment: message
+    }),
+    muteHttpExceptions: true
+  });
+  var step3Data = JSON.parse(step3.getContentText());
+  if (!step3Data.ok) throw new Error('completeUploadExternal: ' + (step3Data.error || 'unknown'));
+}
+
+// ─── SAVE RECORD ───
+
 function saveRecord(data) {
   const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
   const numOnly = String(Number(data.num_sp));
 
   const row = [
-    numOnly,
-    new Date().toISOString(),        // Marca_Temporal
-    data.empresa || '',
-    data.orden_compra || '',
-    data.fecha_solicitud || '',
-    data.fecha_pago || '',
-    data.transferencia_nombre || '',
-    data.moneda || '',
-    data.cuenta_banco || '',
-    data.concepto_pago || '',
-    data.subtotal || 0,
-    data.impuestos || 0,
-    data.monto_total || 0,
-    data.comentarios || '',
-    data.documento || '',
-    data.solicitante || '',
-    data.url_drive || ''
+    numOnly, new Date().toISOString(), data.empresa || '',
+    data.orden_compra || '', data.fecha_solicitud || '', data.fecha_pago || '',
+    data.transferencia_nombre || '', data.moneda || '', data.cuenta_banco || '',
+    data.concepto_pago || '', data.subtotal || 0, data.impuestos || 0,
+    data.monto_total || 0, data.comentarios || '', data.documento || '',
+    data.solicitante || '', data.url_drive || ''
   ];
 
-  // Si overwrite=true, buscar fila existente con ese SP
   if (data.overwrite) {
     const lastRow = sheet.getLastRow();
     if (lastRow > 1) {
@@ -186,69 +193,19 @@ function saveRecord(data) {
     }
   }
 
-  // Si no se encontró o overwrite=false, agregar fila nueva
   sheet.appendRow(row);
-  var result = { success: true, spCode: numOnly, row: sheet.getLastRow(), overwritten: false };
-
-  // Enviar notificación a Slack
-  try {
-    sendSlackNotification({
-      num_sp: numOnly,
-      concepto_pago: data.concepto_pago || data.conceptoPago || '',
-      comentarios: data.comentarios || '',
-      url_drive: data.url_drive || data.driveUrl || '',
-      documento: data.documento || '',
-    });
-  } catch (slackErr) {
-    Logger.log('Error enviando a Slack: ' + slackErr.message);
-  }
-
-  return result;
+  return { success: true, spCode: numOnly, row: sheet.getLastRow(), overwritten: false };
 }
 
-/**
- * Lee todos los registros del Sheet y los retorna como array de objetos.
- * Columnas: A=Num_SP, B=Marca_Temporal, C=Empresa, J=Concepto_Pago,
- *           M=Monto_Total, H=Moneda, Q=URL_File_Drive
- */
+// ─── GET RECORDS ───
+
 function getRecords() {
   var sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
   var lastRow = sheet.getLastRow();
-
-  if (lastRow <= 1) {
-    return { records: [] };
-}
-
-/**
- * Envía una notificación a Slack con los datos de la solicitud de pago.
- */
-function sendSlackNotification(data) {
-  var fileName = data.documento || (data.num_sp + '_SOLPAG.pdf');
-  var message = ':page_facing_up: *NUEVA SOLICITUD DE PAGO*\n\n'
-    + '*Archivo:* ' + fileName + '\n'
-    + '*Concepto:* ' + (data.concepto_pago || 'N/A') + '\n';
-
-  if (data.comentarios && data.comentarios.trim().length > 0) {
-    message += '*Comentarios:* ' + data.comentarios + '\n';
-  }
-
-  if (data.url_drive && data.url_drive.trim().length > 0) {
-    message += '*Ver PDF:* ' + data.url_drive + '\n';
-  }
-
-  var payload = { text: message };
-
-  UrlFetchApp.fetch(SLACK_WEBHOOK_URL, {
-    method: 'post',
-    contentType: 'application/json',
-    payload: JSON.stringify(payload),
-    muteHttpExceptions: true,
-  });
-}
+  if (lastRow <= 1) return { records: [] };
 
   var data = sheet.getRange(2, 1, lastRow - 1, 17).getValues();
   var records = [];
-
   for (var i = 0; i < data.length; i++) {
     var r = data[i];
     records.push({
@@ -263,6 +220,5 @@ function sendSlackNotification(data) {
       url_drive: String(r[16])
     });
   }
-
   return { records: records };
 }
