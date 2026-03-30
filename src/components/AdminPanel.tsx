@@ -6,14 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { RefreshCw, FileText, X, CalendarIcon } from "lucide-react";
+import { RefreshCw, FileText, X, CalendarIcon, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { fetchRecords } from "@/lib/google-api";
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface SheetRecord {
+export interface SheetRecord {
   num_sp: string;
   marca_temporal: string;
   empresa: string;
@@ -23,6 +23,16 @@ interface SheetRecord {
   url_drive: string;
   fecha_pago?: string;
   transferencia_nombre?: string;
+  orden_compra?: string;
+  cuenta_banco?: string;
+  subtotal?: number;
+  impuestos?: number;
+  comentarios?: string;
+  solicitante?: string;
+}
+
+interface AdminPanelProps {
+  onEditRecord?: (record: SheetRecord) => void;
 }
 
 const empresaBadgeStyles: Record<string, string> = {
@@ -41,9 +51,7 @@ const currencyBadgeStyles: Record<string, string> = {
 
 function formatDateOnly(raw: string): string {
   if (!raw) return "—";
-  // Try DD/MM/YYYY already
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) return raw;
-  // ISO or other parseable date
   const d = new Date(raw);
   if (isNaN(d.getTime())) return raw;
   const dd = String(d.getDate()).padStart(2, "0");
@@ -52,7 +60,7 @@ function formatDateOnly(raw: string): string {
   return `${dd}/${mm}/${yyyy}`;
 }
 
-const AdminPanel = () => {
+const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
   const [records, setRecords] = useState<SheetRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -66,6 +74,7 @@ const AdminPanel = () => {
     setError(null);
     try {
       const data = await fetchRecords();
+      console.log('fetchRecords response:', data);
       setRecords(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Error loading records:", err);
@@ -232,7 +241,8 @@ const AdminPanel = () => {
                   <TableHead className="text-right whitespace-nowrap bg-[#1B2A6B] text-white font-bold px-5 py-3.5">Monto Total</TableHead>
                   <TableHead className="bg-[#1B2A6B] text-white font-bold px-5 py-3.5">Moneda</TableHead>
                   <TableHead className="whitespace-nowrap bg-[#1B2A6B] text-white font-bold px-5 py-3.5">Fecha Pago Tentativa</TableHead>
-                  <TableHead className="text-center bg-[#1B2A6B] text-white font-bold px-5 py-3.5 last:rounded-tr-none">PDF</TableHead>
+                  <TableHead className="text-center bg-[#1B2A6B] text-white font-bold px-5 py-3.5">PDF</TableHead>
+                  <TableHead className="text-center bg-[#1B2A6B] text-white font-bold px-5 py-3.5 last:rounded-tr-none">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -279,6 +289,19 @@ const AdminPanel = () => {
                         </Button>
                       ) : (
                         <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center px-5 py-3.5">
+                      {onEditRecord && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => onEditRecord(r)}
+                          title="Editar / Sobreescribir"
+                        >
+                          <Pencil className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                        </Button>
                       )}
                     </TableCell>
                   </TableRow>
