@@ -100,15 +100,16 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
     loadRecords();
   }, []);
 
-  const formatCurrency = (amount: number, moneda: string) => {
+  const formatCurrency = (amount: number | string | undefined, moneda: string) => {
+    const num = Number(amount) || 0;
     try {
       return new Intl.NumberFormat("es-MX", {
         style: "currency",
         currency: moneda || "MXN",
         minimumFractionDigits: 2,
-      }).format(amount);
+      }).format(num);
     } catch {
-      return `$${amount.toFixed(2)}`;
+      return `$${num.toFixed(2)}`;
     }
   };
 
