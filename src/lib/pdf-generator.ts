@@ -202,7 +202,7 @@ export async function generatePDF(data: PaymentRequest): Promise<Uint8Array> {
   // Table 2
   drawTable([
     ['Transferencia a Nombre de', data.transferenciaNombre],
-    ['Moneda', data.moneda, monedaColor],
+    ['Moneda', data.moneda, monedaColor, false, MONEDA_BG_COLORS[data.moneda]],
   ]);
 
   // Table 3
