@@ -23,7 +23,14 @@ async function callAppsScript<T = unknown>(payload: Record<string, unknown>): Pr
     throw new Error(`Apps Script error: ${res.status}`);
   }
 
-  const data = (await res.json()) as T & AppsScriptErrorPayload;
+  const text = await res.text();
+  console.log('Apps Script raw response for', payload.action, ':', text.slice(0, 300));
+  let data: T & AppsScriptErrorPayload;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error(`Apps Script returned invalid JSON: ${text.slice(0, 200)}`);
+  }
 
   if (typeof data === 'object' && data !== null) {
     if (data.success === false) {
