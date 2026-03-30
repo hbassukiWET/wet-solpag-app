@@ -3,6 +3,7 @@ import LoginPage from "@/components/LoginPage";
 import Header from "@/components/Header";
 import PaymentRequestForm from "@/components/PaymentRequestForm";
 import AdminPanel from "@/components/AdminPanel";
+import type { SheetRecord } from "@/components/AdminPanel";
 import ConfirmationScreen from "@/components/ConfirmationScreen";
 import { generatePDF, mergePDFs, generateFileName } from "@/lib/pdf-generator";
 import { fetchConsecutivo, uploadPDF, saveRecord } from "@/lib/google-api";
@@ -17,6 +18,7 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState<'form' | 'admin'>('form');
   const [consecutivo, setConsecutivo] = useState(70);
   const [confirmation, setConfirmation] = useState<{ numSP: string; driveUrl?: string } | null>(null);
+  const [editingRecord, setEditingRecord] = useState<SheetRecord | null>(null);
 
   useEffect(() => {
     fetchConsecutivo()
@@ -86,11 +88,19 @@ const Index = () => {
     }
 
     toast.success(driveUrl ? "PDF guardado en Drive exitosamente" : "PDF generado exitosamente");
+    setEditingRecord(null);
     setConfirmation({ numSP: data.numSP, driveUrl });
   }, [consecutivo, user]);
 
   const handleNewRequest = useCallback(() => {
     setConfirmation(null);
+    setEditingRecord(null);
+  }, []);
+
+  const handleEditRecord = useCallback((record: SheetRecord) => {
+    setEditingRecord(record);
+    setConfirmation(null);
+    setActiveTab('form');
   }, []);
 
   if (!user) {
@@ -113,10 +123,12 @@ const Index = () => {
             <PaymentRequestForm
               currentConsecutivo={consecutivo}
               onSubmit={handleSubmit}
+              editingRecord={editingRecord}
+              onCancelEdit={() => setEditingRecord(null)}
             />
           )
         ) : (
-          <AdminPanel />
+          <AdminPanel onEditRecord={handleEditRecord} />
         )}
       </main>
     </div>

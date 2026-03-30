@@ -42,7 +42,7 @@ const LoginPage = () => {
             Solo cuentas @wilbureagle.com
           </p>
           <p className="text-[10px] text-muted-foreground/50 text-center pt-2">
-            V-1.0
+            V-1.1
           </p>
         </CardContent>
       </Card>

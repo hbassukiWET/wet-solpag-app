@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import type { SheetRecord } from "@/components/AdminPanel";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,6 +18,8 @@ import type { Empresa, Moneda, PaymentRequest } from "@/types/payment";
 interface PaymentRequestFormProps {
   currentConsecutivo: number;
   onSubmit: (data: PaymentRequest) => Promise<void>;
+  editingRecord?: SheetRecord | null;
+  onCancelEdit?: () => void;
 }
 
 const EMPRESAS_INFO: { code: Empresa; name: string; color: string }[] = [
@@ -52,7 +55,7 @@ const RequiredLabel = ({ children, htmlFor }: { children: React.ReactNode; htmlF
 const FieldError = ({ show }: { show: boolean }) =>
   show ? <p className="text-xs text-destructive">Este campo es obligatorio</p> : null;
 
-const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestFormProps) => {
+const PaymentRequestForm = ({ currentConsecutivo, onSubmit, editingRecord, onCancelEdit }: PaymentRequestFormProps) => {
   const autoNumSP = String(currentConsecutivo).padStart(3, '0');
   const [numSP, setNumSP] = useState(autoNumSP);
   const [empresa, setEmpresa] = useState<Empresa | ''>('');
@@ -80,12 +83,40 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userEditedSP, setUserEditedSP] = useState(false);
 
-  // Sync numSP when consecutivo loads from server (only if user hasn't edited it)
+  // Sync numSP when consecutivo loads from server (only if user hasn't edited it and not editing)
   useEffect(() => {
-    if (!userEditedSP) {
+    if (!userEditedSP && !editingRecord) {
       setNumSP(autoNumSP);
     }
-  }, [autoNumSP, userEditedSP]);
+  }, [autoNumSP, userEditedSP, editingRecord]);
+
+  // Pre-fill form when editing a record
+  useEffect(() => {
+    if (editingRecord) {
+      setNumSP(editingRecord.num_sp);
+      setEmpresa((editingRecord.empresa || '') as Empresa | '');
+      setOrdenCompra(editingRecord.orden_compra || '');
+      setTransferenciaNombre(editingRecord.transferencia_nombre || '');
+      setMoneda((editingRecord.moneda || '') as Moneda | '');
+      setCuentaBanco(editingRecord.cuenta_banco || '');
+      setConceptoPago(editingRecord.concepto_pago || '');
+      setSubtotal(editingRecord.subtotal != null ? String(editingRecord.subtotal) : '');
+      setImpuestos(editingRecord.impuestos != null ? String(editingRecord.impuestos) : '');
+      setMontoTotal(editingRecord.monto_total != null ? String(editingRecord.monto_total) : '');
+      setComentarios(editingRecord.comentarios || '');
+      setUserEditedSP(true);
+      setAdjunto(null);
+      setTouched(new Set());
+
+      // Try to parse fecha_pago
+      if (editingRecord.fecha_pago) {
+        const parts = editingRecord.fecha_pago.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if (parts) {
+          setFechaPago(new Date(parseInt(parts[3]), parseInt(parts[2]) - 1, parseInt(parts[1])));
+        }
+      }
+    }
+  }, [editingRecord]);
 
   // Refs for scroll-to-first-error
   const fieldRefs = useRef<Partial<Record<FieldKey, HTMLDivElement | null>>>({});
@@ -201,7 +232,17 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
   return (
     <>
       <div className="space-y-6">
-        {/* Identificación */}
+        {/* Editing banner */}
+        {editingRecord && (
+          <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700">
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+              ✏️ Editando SP-{editingRecord.num_sp} — los cambios sobreescribirán el registro existente
+            </p>
+            <Button variant="ghost" size="sm" onClick={onCancelEdit} className="text-amber-800 dark:text-amber-200 hover:bg-amber-200 dark:hover:bg-amber-800">
+              Cancelar edición
+            </Button>
+          </div>
+        )}
         <Card className="glass-card">
           <CardContent className="pt-6">
             <p className="form-section-title">Identificación</p>
@@ -442,7 +483,7 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
           ) : (
             <>
               <FileText className="w-5 h-5 mr-2" />
-              Generar Solicitud de Pago
+              {editingRecord ? 'Sobreescribir Solicitud de Pago' : 'Generar Solicitud de Pago'}
             </>
           )}
         </Button>

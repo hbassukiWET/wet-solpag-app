@@ -148,10 +148,21 @@ export async function fetchRecords(): Promise<
     moneda: string;
     fecha_pago: string;
     url_drive: string;
+    orden_compra?: string;
+    cuenta_banco?: string;
+    subtotal?: number;
+    impuestos?: number;
+    comentarios?: string;
+    solicitante?: string;
   }>
 > {
-  const result = await callAppsScript<{ records: any[] }>({ action: 'getRecords' });
-  return result.records;
+  const result = await callAppsScript<{ records?: any[]; data?: any[] }>({ action: 'getRecords' });
+  // Handle various response shapes
+  if (Array.isArray(result)) return result;
+  if (Array.isArray(result.records)) return result.records;
+  if (Array.isArray(result.data)) return result.data;
+  console.warn('fetchRecords: unexpected response shape', result);
+  return [];
 }
 
 function uint8ArrayToBase64(bytes: Uint8Array): string {
