@@ -74,8 +74,20 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
     setError(null);
     try {
       const data = await fetchRecords();
-      console.log('fetchRecords response:', data);
-      setRecords(Array.isArray(data) ? data : []);
+      console.log('fetchRecords raw response:', JSON.stringify(data).slice(0, 500));
+      const normalized = (Array.isArray(data) ? data : []).map((r: any) => ({
+        ...r,
+        num_sp: String(r.num_sp ?? ''),
+        empresa: String(r.empresa ?? ''),
+        concepto_pago: String(r.concepto_pago ?? ''),
+        monto_total: Number(r.monto_total) || 0,
+        moneda: String(r.moneda ?? 'MXN'),
+        url_drive: String(r.url_drive ?? ''),
+        marca_temporal: String(r.marca_temporal ?? ''),
+        transferencia_nombre: r.transferencia_nombre ? String(r.transferencia_nombre) : undefined,
+        fecha_pago: r.fecha_pago ? String(r.fecha_pago) : undefined,
+      }));
+      setRecords(normalized);
     } catch (err) {
       console.error("Error loading records:", err);
       setError(err instanceof Error ? err.message : "No se pudieron cargar los registros.");
