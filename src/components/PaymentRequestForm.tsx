@@ -232,7 +232,17 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit, editingRecord, onCan
   return (
     <>
       <div className="space-y-6">
-        {/* Identificación */}
+        {/* Editing banner */}
+        {editingRecord && (
+          <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700">
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+              ✏️ Editando SP-{editingRecord.num_sp} — los cambios sobreescribirán el registro existente
+            </p>
+            <Button variant="ghost" size="sm" onClick={onCancelEdit} className="text-amber-800 dark:text-amber-200 hover:bg-amber-200 dark:hover:bg-amber-800">
+              Cancelar edición
+            </Button>
+          </div>
+        )}
         <Card className="glass-card">
           <CardContent className="pt-6">
             <p className="form-section-title">Identificación</p>
