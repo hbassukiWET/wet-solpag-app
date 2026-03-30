@@ -128,8 +128,8 @@ export async function generatePDF(data: PaymentRequest): Promise<Uint8Array> {
     return lines.length ? lines : [''];
   };
 
-  // Helper: draw a table; rows can be [label, value, color?, highlight?]
-  const drawTable = (rows: [string, string, Color?, boolean?][]) => {
+  // Helper: draw a table; rows can be [label, value, color?, highlight?, valueBgColor?]
+  const drawTable = (rows: [string, string, Color?, boolean?, Color?][]) => {
     const borderColor = rgb(0.75, 0.75, 0.78);
 
     // Pre-calculate row heights based on wrapped text
@@ -138,13 +138,14 @@ export async function generatePDF(data: PaymentRequest): Promise<Uint8Array> {
 
     const rowData = rows.map((row) => {
       const isHighlight = row[3] === true;
+      const valueBgColor = row[4];
       const labelFont = helveticaBold;
       const valueFont = isHighlight ? helveticaBold : helvetica;
       const labelLines = wrapText(row[0], labelFont, col1MaxW);
       const valueLines = wrapText(row[1], valueFont, col2MaxW);
       const textHeight = Math.max(labelLines.length, valueLines.length) * lineHeight;
       const rh = Math.max(minRowHeight, textHeight + cellPadding * 2);
-      return { row, isHighlight, labelFont, valueFont, labelLines, valueLines, height: rh };
+      return { row, isHighlight, valueBgColor, labelFont, valueFont, labelLines, valueLines, height: rh };
     });
 
     let cumulativeY = 0;
@@ -162,16 +163,16 @@ export async function generatePDF(data: PaymentRequest): Promise<Uint8Array> {
         page.drawRectangle({ x: tableX, y: cellBottom, width: tableWidth, height: rh, color: lightGray });
       }
 
+      // Value cell background color (e.g., for moneda)
+      if (rd.valueBgColor) {
+        page.drawRectangle({ x: tableX + col1Width, y: cellBottom, width: col2Width, height: rh, color: rd.valueBgColor });
+      }
+
       // All 4 borders explicitly for every row
-      // Top border
       page.drawRectangle({ x: tableX, y: cellTop, width: tableWidth, height: 0.75, color: borderColor });
-      // Bottom border
       page.drawRectangle({ x: tableX, y: cellBottom, width: tableWidth, height: 0.75, color: borderColor });
-      // Left border
       page.drawRectangle({ x: tableX, y: cellBottom, width: 0.75, height: rh, color: borderColor });
-      // Right border
       page.drawRectangle({ x: tableX + tableWidth - 0.75, y: cellBottom, width: 0.75, height: rh, color: borderColor });
-      // Column divider
       page.drawRectangle({ x: tableX + col1Width, y: cellBottom, width: 0.75, height: rh, color: borderColor });
 
       // Draw label lines
