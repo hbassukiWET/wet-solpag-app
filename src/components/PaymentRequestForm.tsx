@@ -55,7 +55,7 @@ const RequiredLabel = ({ children, htmlFor }: { children: React.ReactNode; htmlF
 const FieldError = ({ show }: { show: boolean }) =>
   show ? <p className="text-xs text-destructive">Este campo es obligatorio</p> : null;
 
-const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestFormProps) => {
+const PaymentRequestForm = ({ currentConsecutivo, onSubmit, editingRecord, onCancelEdit }: PaymentRequestFormProps) => {
   const autoNumSP = String(currentConsecutivo).padStart(3, '0');
   const [numSP, setNumSP] = useState(autoNumSP);
   const [empresa, setEmpresa] = useState<Empresa | ''>('');
@@ -83,12 +83,40 @@ const PaymentRequestForm = ({ currentConsecutivo, onSubmit }: PaymentRequestForm
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userEditedSP, setUserEditedSP] = useState(false);
 
-  // Sync numSP when consecutivo loads from server (only if user hasn't edited it)
+  // Sync numSP when consecutivo loads from server (only if user hasn't edited it and not editing)
   useEffect(() => {
-    if (!userEditedSP) {
+    if (!userEditedSP && !editingRecord) {
       setNumSP(autoNumSP);
     }
-  }, [autoNumSP, userEditedSP]);
+  }, [autoNumSP, userEditedSP, editingRecord]);
+
+  // Pre-fill form when editing a record
+  useEffect(() => {
+    if (editingRecord) {
+      setNumSP(editingRecord.num_sp);
+      setEmpresa((editingRecord.empresa || '') as Empresa | '');
+      setOrdenCompra(editingRecord.orden_compra || '');
+      setTransferenciaNombre(editingRecord.transferencia_nombre || '');
+      setMoneda((editingRecord.moneda || '') as Moneda | '');
+      setCuentaBanco(editingRecord.cuenta_banco || '');
+      setConceptoPago(editingRecord.concepto_pago || '');
+      setSubtotal(editingRecord.subtotal != null ? String(editingRecord.subtotal) : '');
+      setImpuestos(editingRecord.impuestos != null ? String(editingRecord.impuestos) : '');
+      setMontoTotal(editingRecord.monto_total != null ? String(editingRecord.monto_total) : '');
+      setComentarios(editingRecord.comentarios || '');
+      setUserEditedSP(true);
+      setAdjunto(null);
+      setTouched(new Set());
+
+      // Try to parse fecha_pago
+      if (editingRecord.fecha_pago) {
+        const parts = editingRecord.fecha_pago.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if (parts) {
+          setFechaPago(new Date(parseInt(parts[3]), parseInt(parts[2]) - 1, parseInt(parts[1])));
+        }
+      }
+    }
+  }, [editingRecord]);
 
   // Refs for scroll-to-first-error
   const fieldRefs = useRef<Partial<Record<FieldKey, HTMLDivElement | null>>>({});
