@@ -18,6 +18,8 @@ import type { Empresa, Moneda, PaymentRequest } from "@/types/payment";
 interface PaymentRequestFormProps {
   currentConsecutivo: number;
   onSubmit: (data: PaymentRequest) => Promise<void>;
+  editingRecord?: SheetRecord | null;
+  onCancelEdit?: () => void;
 }
 
 const EMPRESAS_INFO: { code: Empresa; name: string; color: string }[] = [
