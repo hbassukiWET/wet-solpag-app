@@ -25,6 +25,12 @@ const MONEDA_COLORS: Record<string, Color> = {
   MXN: rgb(0.106, 0.369, 0.125),// #1B5E20
 };
 
+const MONEDA_BG_COLORS: Record<string, Color> = {
+  EUR: rgb(0.85, 0.91, 0.97),    // light blue
+  USD: rgb(0.85, 0.95, 0.85),    // light green
+  MXN: rgb(0.82, 0.93, 0.82),    // light dark-green
+};
+
 export function generateFileName(data: PaymentRequest): string {
   const yy = new Date().getFullYear().toString().slice(-2);
   const num = data.numSP.padStart(3, '0');
