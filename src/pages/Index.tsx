@@ -90,8 +90,8 @@ const Index = () => {
     }
 
     toast.success(driveUrl ? "PDF guardado en Drive exitosamente" : "PDF generado exitosamente");
-    if ((driveResult as any)?.slackError) {
-      toast.warning("No se pudo enviar a Slack: " + (driveResult as any).slackError);
+    if (slackError) {
+      toast.warning("No se pudo enviar a Slack: " + slackError);
     }
     setEditingRecord(null);
     setConfirmation({ numSP: data.numSP, driveUrl });
