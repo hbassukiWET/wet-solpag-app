@@ -63,7 +63,7 @@ export async function uploadPDFToDrive(
 export async function uploadPDF(
   filename: string,
   pdfBytes: Uint8Array
-): Promise<{ url: string }> {
+): Promise<{ url: string; slackError?: string }> {
   const base64Content = uint8ArrayToBase64(pdfBytes);
 
   const parseUploadUrl = (result: Record<string, unknown>): string | undefined => {
@@ -80,8 +80,14 @@ export async function uploadPDF(
       fileName: filename,
     });
 
+    if (topLevel.slackError) {
+      console.warn('Slack error from Apps Script:', topLevel.slackError);
+    }
+
     const url = parseUploadUrl(topLevel);
-    if (url) return { url };
+    if (url) {
+      return { url, slackError: topLevel.slackError as string | undefined };
+    }
   } catch {
     // Fallback below
   }

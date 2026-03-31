@@ -38,10 +38,12 @@ const Index = () => {
 
     const fileName = generateFileName(data);
     let driveUrl: string | undefined;
+    let slackError: string | undefined;
 
     try {
       const driveResult = await uploadPDF(fileName, pdfBytes);
       driveUrl = driveResult.url;
+      slackError = driveResult.slackError;
     } catch (err) {
       console.warn('No se pudo subir a Drive, descargando localmente:', err);
       const blob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
@@ -88,6 +90,9 @@ const Index = () => {
     }
 
     toast.success(driveUrl ? "PDF guardado en Drive exitosamente" : "PDF generado exitosamente");
+    if (slackError) {
+      toast.warning("No se pudo enviar a Slack: " + slackError);
+    }
     setEditingRecord(null);
     setConfirmation({ numSP: data.numSP, driveUrl });
   }, [consecutivo, user]);
