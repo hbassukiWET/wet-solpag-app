@@ -63,7 +63,7 @@ export async function uploadPDFToDrive(
 export async function uploadPDF(
   filename: string,
   pdfBytes: Uint8Array
-): Promise<{ url: string }> {
+): Promise<{ url: string; slackError?: string }> {
   const base64Content = uint8ArrayToBase64(pdfBytes);
 
   const parseUploadUrl = (result: Record<string, unknown>): string | undefined => {
