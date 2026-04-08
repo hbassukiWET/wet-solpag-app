@@ -6,8 +6,8 @@ import type { UserProfile } from "@/types/payment";
 interface HeaderProps {
   user: UserProfile;
   onLogout: () => void;
-  activeTab: 'form' | 'admin';
-  onTabChange: (tab: 'form' | 'admin') => void;
+  activeTab: 'form' | 'admin' | 'kpis';
+  onTabChange: (tab: 'form' | 'admin' | 'kpis') => void;
 }
 
 const Header = ({ user, onLogout, activeTab, onTabChange }: HeaderProps) => {
@@ -44,6 +44,16 @@ const Header = ({ user, onLogout, activeTab, onTabChange }: HeaderProps) => {
             }`}
           >
             Administración
+          </button>
+          <button
+            onClick={() => onTabChange('kpis')}
+            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              activeTab === 'kpis'
+                ? 'bg-card text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            KPIs de Pagos
           </button>
         </nav>
 
@@ -84,6 +94,16 @@ const Header = ({ user, onLogout, activeTab, onTabChange }: HeaderProps) => {
           }`}
         >
           Administración
+        </button>
+        <button
+          onClick={() => onTabChange('kpis')}
+          className={`flex-1 py-2.5 text-sm font-medium text-center transition-colors ${
+            activeTab === 'kpis'
+              ? 'text-primary border-b-2 border-primary'
+              : 'text-muted-foreground'
+          }`}
+        >
+          KPIs
         </button>
       </div>
     </header>

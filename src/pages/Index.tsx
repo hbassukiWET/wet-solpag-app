@@ -3,6 +3,7 @@ import LoginPage from "@/components/LoginPage";
 import Header from "@/components/Header";
 import PaymentRequestForm from "@/components/PaymentRequestForm";
 import AdminPanel from "@/components/AdminPanel";
+import KPIDashboard from "@/components/KPIDashboard";
 import type { SheetRecord } from "@/components/AdminPanel";
 import ConfirmationScreen from "@/components/ConfirmationScreen";
 import { generatePDF, mergePDFs, generateFileName } from "@/lib/pdf-generator";
@@ -15,7 +16,7 @@ import { es } from "date-fns/locale";
 
 const Index = () => {
   const { user, handleLogout } = useAuth();
-  const [activeTab, setActiveTab] = useState<'form' | 'admin'>('form');
+  const [activeTab, setActiveTab] = useState<'form' | 'admin' | 'kpis'>('form');
   const [consecutivo, setConsecutivo] = useState(70);
   const [confirmation, setConfirmation] = useState<{ numSP: string; driveUrl?: string } | null>(null);
   const [editingRecord, setEditingRecord] = useState<SheetRecord | null>(null);
@@ -116,7 +117,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header user={user} onLogout={handleLogout} activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <main className={`mx-auto px-4 sm:px-6 py-8 ${activeTab === 'admin' ? 'max-w-full' : 'max-w-3xl'}`}>
+      <main className={`mx-auto px-4 sm:px-6 py-8 ${activeTab === 'form' ? 'max-w-3xl' : 'max-w-full'}`}>
         {activeTab === 'form' ? (
           confirmation ? (
             <ConfirmationScreen
@@ -132,8 +133,10 @@ const Index = () => {
               onCancelEdit={() => setEditingRecord(null)}
             />
           )
-        ) : (
+        ) : activeTab === 'admin' ? (
           <AdminPanel onEditRecord={handleEditRecord} />
+        ) : (
+          <KPIDashboard />
         )}
       </main>
     </div>
