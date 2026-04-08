@@ -190,9 +190,10 @@ const KPIDashboard = () => {
     const map: Record<string, { count: number; total: number }> = {};
     filtered.forEach(r => {
       if (!r.orden_compra) return;
-      if (!map[r.orden_compra]) map[r.orden_compra] = { count: 0, total: 0 };
-      map[r.orden_compra].count++;
-      map[r.orden_compra].total += r.monto_total;
+      const key = stripAccents(r.orden_compra);
+      if (!map[key]) map[key] = { count: 0, total: 0 };
+      map[key].count++;
+      map[key].total += r.monto_total;
     });
     return Object.entries(map)
       .map(([oc, d]) => ({ oc, ...d }))
