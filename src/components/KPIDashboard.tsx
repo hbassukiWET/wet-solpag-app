@@ -64,6 +64,10 @@ function parseDate(raw: string): Date | null {
   return isNaN(d.getTime()) ? null : d;
 }
 
+function stripAccents(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
 function fmtCurrency(n: number, moneda = "MXN") {
   try {
     return new Intl.NumberFormat("es-MX", { style: "currency", currency: moneda, minimumFractionDigits: 2 }).format(n);
@@ -138,7 +142,7 @@ const KPIDashboard = () => {
 
   const byEmpresa = useMemo(() => {
     const map: Record<string, number> = {};
-    filtered.forEach(r => { map[r.empresa] = (map[r.empresa] || 0) + r.monto_total; });
+    filtered.forEach(r => { const key = stripAccents(r.empresa); map[key] = (map[key] || 0) + r.monto_total; });
     return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
   }, [filtered]);
 
@@ -168,7 +172,7 @@ const KPIDashboard = () => {
       const curRecords = filtered.filter(r => r.moneda === cur);
       const map: Record<string, number> = {};
       curRecords.forEach(r => {
-        if (r.transferencia_nombre) map[r.transferencia_nombre] = (map[r.transferencia_nombre] || 0) + r.monto_total;
+        if (r.transferencia_nombre) { const key = stripAccents(r.transferencia_nombre); map[key] = (map[key] || 0) + r.monto_total; }
       });
       const sorted = Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
       const total = curRecords.reduce((s, r) => s + r.monto_total, 0);
@@ -186,9 +190,10 @@ const KPIDashboard = () => {
     const map: Record<string, { count: number; total: number }> = {};
     filtered.forEach(r => {
       if (!r.orden_compra) return;
-      if (!map[r.orden_compra]) map[r.orden_compra] = { count: 0, total: 0 };
-      map[r.orden_compra].count++;
-      map[r.orden_compra].total += r.monto_total;
+      const key = stripAccents(r.orden_compra);
+      if (!map[key]) map[key] = { count: 0, total: 0 };
+      map[key].count++;
+      map[key].total += r.monto_total;
     });
     return Object.entries(map)
       .map(([oc, d]) => ({ oc, ...d }))
