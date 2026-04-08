@@ -64,6 +64,10 @@ function parseDate(raw: string): Date | null {
   return isNaN(d.getTime()) ? null : d;
 }
 
+function stripAccents(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
 function fmtCurrency(n: number, moneda = "MXN") {
   try {
     return new Intl.NumberFormat("es-MX", { style: "currency", currency: moneda, minimumFractionDigits: 2 }).format(n);
