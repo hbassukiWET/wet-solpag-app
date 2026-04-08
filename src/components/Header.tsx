@@ -45,6 +45,16 @@ const Header = ({ user, onLogout, activeTab, onTabChange }: HeaderProps) => {
           >
             Administración
           </button>
+          <button
+            onClick={() => onTabChange('kpis')}
+            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              activeTab === 'kpis'
+                ? 'bg-card text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            KPIs de Pagos
+          </button>
         </nav>
 
         <div className="flex items-center gap-3">
@@ -84,6 +94,16 @@ const Header = ({ user, onLogout, activeTab, onTabChange }: HeaderProps) => {
           }`}
         >
           Administración
+        </button>
+        <button
+          onClick={() => onTabChange('kpis')}
+          className={`flex-1 py-2.5 text-sm font-medium text-center transition-colors ${
+            activeTab === 'kpis'
+              ? 'text-primary border-b-2 border-primary'
+              : 'text-muted-foreground'
+          }`}
+        >
+          KPIs
         </button>
       </div>
     </header>
