@@ -6,8 +6,8 @@ import type { UserProfile } from "@/types/payment";
 interface HeaderProps {
   user: UserProfile;
   onLogout: () => void;
-  activeTab: 'form' | 'admin';
-  onTabChange: (tab: 'form' | 'admin') => void;
+  activeTab: 'form' | 'admin' | 'kpis';
+  onTabChange: (tab: 'form' | 'admin' | 'kpis') => void;
 }
 
 const Header = ({ user, onLogout, activeTab, onTabChange }: HeaderProps) => {
