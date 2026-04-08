@@ -66,7 +66,8 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
   const [error, setError] = useState<string | null>(null);
   const [filterEmpresa, setFilterEmpresa] = useState<string>("all");
   const [filterNombre, setFilterNombre] = useState("");
-  const [filterFecha, setFilterFecha] = useState<Date | undefined>(undefined);
+  const [filterFechaDesde, setFilterFechaDesde] = useState<Date | undefined>(undefined);
+  const [filterFechaHasta, setFilterFechaHasta] = useState<Date | undefined>(undefined);
   const [filterNumSP, setFilterNumSP] = useState("");
 
   const loadRecords = async () => {
@@ -113,25 +114,39 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
     }
   };
 
+  const parseRecordDate = (raw: string): Date | null => {
+    if (!raw) return null;
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) {
+      const [dd, mm, yyyy] = raw.split("/");
+      return new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+    }
+    const d = new Date(raw);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
   const filteredRecords = useMemo(() => {
     return records.filter((r) => {
       if (filterEmpresa !== "all" && r.empresa !== filterEmpresa) return false;
       if (filterNombre && !(r.transferencia_nombre || "").toLowerCase().includes(filterNombre.toLowerCase())) return false;
-      if (filterFecha) {
-        const filterStr = format(filterFecha, "dd/MM/yyyy");
-        if (formatDateOnly(r.fecha_pago || r.marca_temporal) !== filterStr) return false;
+      if (filterFechaDesde || filterFechaHasta) {
+        const recDate = parseRecordDate(r.fecha_pago || r.marca_temporal);
+        if (!recDate) return false;
+        const recDay = new Date(recDate.getFullYear(), recDate.getMonth(), recDate.getDate());
+        if (filterFechaDesde && recDay < filterFechaDesde) return false;
+        if (filterFechaHasta && recDay > filterFechaHasta) return false;
       }
       if (filterNumSP && !r.num_sp.toLowerCase().includes(filterNumSP.toLowerCase())) return false;
       return true;
     });
-  }, [records, filterEmpresa, filterNombre, filterFecha, filterNumSP]);
+  }, [records, filterEmpresa, filterNombre, filterFechaDesde, filterFechaHasta, filterNumSP]);
 
-  const hasActiveFilters = filterEmpresa !== "all" || filterNombre || !!filterFecha || filterNumSP;
+  const hasActiveFilters = filterEmpresa !== "all" || filterNombre || !!filterFechaDesde || !!filterFechaHasta || filterNumSP;
 
   const clearFilters = () => {
     setFilterEmpresa("all");
     setFilterNombre("");
-    setFilterFecha(undefined);
+    setFilterFechaDesde(undefined);
+    setFilterFechaHasta(undefined);
     setFilterNumSP("");
   };
 
@@ -194,25 +209,52 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted-foreground">Fecha</label>
+            <label className="text-xs font-medium text-muted-foreground">Fecha Desde</label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
-                    "h-9 w-44 justify-start text-left font-normal",
-                    !filterFecha && "text-muted-foreground"
+                    "h-9 w-40 justify-start text-left font-normal",
+                    !filterFechaDesde && "text-muted-foreground"
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {filterFecha ? format(filterFecha, "dd/MM/yyyy") : "Seleccionar..."}
+                  {filterFechaDesde ? format(filterFechaDesde, "dd/MM/yyyy") : "Desde..."}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
-                  selected={filterFecha}
-                  onSelect={(date) => setFilterFecha(date)}
+                  selected={filterFechaDesde}
+                  onSelect={(date) => setFilterFechaDesde(date)}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                  locale={es}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-muted-foreground">Fecha Hasta</label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "h-9 w-40 justify-start text-left font-normal",
+                    !filterFechaHasta && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {filterFechaHasta ? format(filterFechaHasta, "dd/MM/yyyy") : "Hasta..."}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={filterFechaHasta}
+                  onSelect={(date) => setFilterFechaHasta(date)}
                   initialFocus
                   className={cn("p-3 pointer-events-auto")}
                   locale={es}
