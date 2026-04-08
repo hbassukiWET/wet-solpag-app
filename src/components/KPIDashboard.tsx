@@ -6,7 +6,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CalendarIcon, RefreshCw, DollarSign, FileText, Clock, AlertTriangle, TrendingUp, Users, Package, Receipt } from "lucide-react";
+import { CalendarIcon, RefreshCw, DollarSign, FileText, Clock, TrendingUp, Users, Package, Receipt } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -128,7 +128,7 @@ const KPIDashboard = () => {
     });
   }, [records, filterEmpresa, filterMoneda, filterSolicitante, dateFrom, dateTo]);
 
-  const today = new Date();
+  
 
   // SECTION 1 - Volume
   const totalMXN = useMemo(() => filtered.filter(r => r.moneda === "MXN").reduce((s, r) => s + r.monto_total, 0), [filtered]);
