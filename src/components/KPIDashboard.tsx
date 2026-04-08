@@ -6,7 +6,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CalendarIcon, RefreshCw, DollarSign, FileText, Clock, AlertTriangle, TrendingUp, Users, Package, Receipt } from "lucide-react";
+import { CalendarIcon, RefreshCw, DollarSign, FileText, Clock, TrendingUp, Users, Package, Receipt } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -128,7 +128,7 @@ const KPIDashboard = () => {
     });
   }, [records, filterEmpresa, filterMoneda, filterSolicitante, dateFrom, dateTo]);
 
-  const today = new Date();
+  
 
   // SECTION 1 - Volume
   const totalMXN = useMemo(() => filtered.filter(r => r.moneda === "MXN").reduce((s, r) => s + r.monto_total, 0), [filtered]);
@@ -158,25 +158,6 @@ const KPIDashboard = () => {
     return count > 0 ? Math.round(sum / count) : 0;
   }, [filtered]);
 
-  const overdueRecords = useMemo(() => filtered.filter(r => {
-    const fp = parseDate(r.fecha_pago);
-    return fp && fp < today;
-  }), [filtered]);
-
-  const overdueAmount = useMemo(() => overdueRecords.reduce((s, r) => s + r.monto_total, 0), [overdueRecords]);
-
-  const avgPendingAge = useMemo(() => {
-    const pending = filtered.filter(r => {
-      const fp = parseDate(r.fecha_pago);
-      return fp && fp >= today;
-    });
-    if (!pending.length) return 0;
-    const sum = pending.reduce((s, r) => {
-      const fs = parseDate(r.fecha_solicitud);
-      return s + (fs ? daysBetween(fs, today) : 0);
-    }, 0);
-    return Math.round(sum / pending.length);
-  }, [filtered]);
 
   // SECTION 4 - Providers
   const topProviders = useMemo(() => {
@@ -319,17 +300,15 @@ const KPIDashboard = () => {
       {/* KPI Cards Row 2 */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <KPICard icon={Clock} label="Días Prom. al Pago" value={`${avgDaysToPayment} días`} />
-        <KPICard icon={AlertTriangle} label="Solicitudes Vencidas" value={String(overdueRecords.length)} variant="destructive" />
-        <KPICard icon={AlertTriangle} label="Monto Vencido" value={fmtCurrency(overdueAmount, "MXN")} variant="destructive" />
-        <KPICard icon={Clock} label="Antigüedad Prom. Pendientes" value={`${avgPendingAge} días`} />
-      </div>
-
-      {/* KPI Cards Row 3 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <KPICard icon={Package} label="Backlog Abierto" value={String(totalRequests)} />
         <KPICard icon={DollarSign} label="Monto Backlog" value={fmtCurrency(totalBacklog, "MXN")} />
         <KPICard icon={Receipt} label="Impuestos Acumulados" value={fmtCurrency(totalTax, "MXN")} />
+      </div>
+
+      {/* KPI Cards Row 3 */}
+      <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
         <KPICard icon={Receipt} label="Ratio Impuestos/Subtotal" value={`${avgTaxRatio}%`} />
+        <KPICard icon={Users} label="Concentración Top 5" value={`${top5Concentration}%`} />
       </div>
 
       {/* Charts Row 1 */}
