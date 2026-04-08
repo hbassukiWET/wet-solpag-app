@@ -159,21 +159,27 @@ const KPIDashboard = () => {
   }, [filtered]);
 
 
-  // SECTION 4 - Providers
-  const topProviders = useMemo(() => {
-    const map: Record<string, number> = {};
-    filtered.forEach(r => {
-      if (r.transferencia_nombre) map[r.transferencia_nombre] = (map[r.transferencia_nombre] || 0) + r.monto_total;
-    });
-    return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 10);
-  }, [filtered]);
+  // SECTION 4 - Providers by currency
+  const currencies = useMemo(() => [...new Set(filtered.map(r => r.moneda).filter(Boolean))].sort(), [filtered]);
 
-  const top5Concentration = useMemo(() => {
-    const total = filtered.reduce((s, r) => s + r.monto_total, 0);
-    if (!total) return 0;
-    const top5Sum = topProviders.slice(0, 5).reduce((s, p) => s + p.value, 0);
-    return Math.round((top5Sum / total) * 100);
-  }, [filtered, topProviders]);
+  const topProvidersByCurrency = useMemo(() => {
+    const result: Record<string, { providers: { name: string; value: number }[]; top5Pct: number }> = {};
+    currencies.forEach(cur => {
+      const curRecords = filtered.filter(r => r.moneda === cur);
+      const map: Record<string, number> = {};
+      curRecords.forEach(r => {
+        if (r.transferencia_nombre) map[r.transferencia_nombre] = (map[r.transferencia_nombre] || 0) + r.monto_total;
+      });
+      const sorted = Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+      const total = curRecords.reduce((s, r) => s + r.monto_total, 0);
+      const top5Sum = sorted.slice(0, 5).reduce((s, p) => s + p.value, 0);
+      result[cur] = {
+        providers: sorted.slice(0, 10),
+        top5Pct: total > 0 ? Math.round((top5Sum / total) * 100) : 0,
+      };
+    });
+    return result;
+  }, [filtered, currencies]);
 
   // SECTION 5 - OC
   const ocData = useMemo(() => {
@@ -308,7 +314,6 @@ const KPIDashboard = () => {
       {/* KPI Cards Row 3 */}
       <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
         <KPICard icon={Receipt} label="Ratio Impuestos/Subtotal" value={`${avgTaxRatio}%`} />
-        <KPICard icon={Users} label="Concentración Top 5" value={`${top5Concentration}%`} />
       </div>
 
       {/* Charts Row 1 */}
@@ -349,30 +354,32 @@ const KPIDashboard = () => {
         </Card>
       </div>
 
-      {/* Charts Row 2 - Providers */}
-      <div className="grid md:grid-cols-2 gap-4">
-        <Card className="md:col-span-2">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">Top 10 Proveedores por Monto</CardTitle>
-              <span className="text-xs text-muted-foreground">Top 5 = {top5Concentration}% del total</span>
-            </div>
-          </CardHeader>
-          <CardContent className="h-80">
-            {topProviders.length > 0 ? (
+      {/* Charts - Providers by Currency */}
+      {currencies.map(cur => {
+        const data = topProvidersByCurrency[cur];
+        if (!data || data.providers.length === 0) return null;
+        return (
+          <Card key={cur}>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium">Top 10 Proveedores — {cur}</CardTitle>
+                <span className="text-xs text-muted-foreground">Top 5 = {data.top5Pct}% del total</span>
+              </div>
+            </CardHeader>
+            <CardContent className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={topProviders} layout="vertical" margin={{ left: 120, right: 20, top: 5, bottom: 5 }}>
+                <BarChart data={data.providers} layout="vertical" margin={{ left: 120, right: 20, top: 5, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(214, 20%, 88%)" />
-                  <XAxis type="number" tickFormatter={(v) => fmtCurrency(v, "MXN")} tick={{ fontSize: 11 }} />
+                  <XAxis type="number" tickFormatter={(v) => fmtCurrency(v, cur)} tick={{ fontSize: 11 }} />
                   <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={110} />
-                  <Tooltip formatter={(v: number) => fmtCurrency(v, "MXN")} />
-                  <Bar dataKey="value" fill="hsl(220, 60%, 25%)" radius={[0, 4, 4, 0]} />
+                  <Tooltip formatter={(v: number) => fmtCurrency(v, cur)} />
+                  <Bar dataKey="value" fill={cur === "MXN" ? "hsl(220, 60%, 25%)" : cur === "USD" ? "hsl(150, 50%, 40%)" : "hsl(38, 92%, 50%)"} radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-            ) : <p className="text-muted-foreground text-sm text-center pt-20">Sin datos</p>}
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        );
+      })}
 
       {/* Charts Row 3 - OC */}
       <div className="grid md:grid-cols-2 gap-4">
