@@ -36,7 +36,7 @@ export function generateFileName(data: PaymentRequest): string {
   const num = data.numSP.padStart(3, '0');
   const oc = data.ordenCompra;
   const concepto = data.conceptoPago.toUpperCase();
-  return `SP-${yy}_${num}_${oc}_${concepto}.pdf`;
+  return `${num}_SP-${yy}_${oc}_${concepto}.pdf`;
 }
 
 export async function generatePDF(data: PaymentRequest): Promise<Uint8Array> {
