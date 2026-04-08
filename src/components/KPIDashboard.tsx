@@ -142,7 +142,7 @@ const KPIDashboard = () => {
 
   const byEmpresa = useMemo(() => {
     const map: Record<string, number> = {};
-    filtered.forEach(r => { map[r.empresa] = (map[r.empresa] || 0) + r.monto_total; });
+    filtered.forEach(r => { const key = stripAccents(r.empresa); map[key] = (map[key] || 0) + r.monto_total; });
     return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
   }, [filtered]);
 
