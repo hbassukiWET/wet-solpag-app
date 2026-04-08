@@ -66,7 +66,8 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
   const [error, setError] = useState<string | null>(null);
   const [filterEmpresa, setFilterEmpresa] = useState<string>("all");
   const [filterNombre, setFilterNombre] = useState("");
-  const [filterFecha, setFilterFecha] = useState<Date | undefined>(undefined);
+  const [filterFechaDesde, setFilterFechaDesde] = useState<Date | undefined>(undefined);
+  const [filterFechaHasta, setFilterFechaHasta] = useState<Date | undefined>(undefined);
   const [filterNumSP, setFilterNumSP] = useState("");
 
   const loadRecords = async () => {
