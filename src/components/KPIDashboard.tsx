@@ -172,7 +172,7 @@ const KPIDashboard = () => {
       const curRecords = filtered.filter(r => r.moneda === cur);
       const map: Record<string, number> = {};
       curRecords.forEach(r => {
-        if (r.transferencia_nombre) map[r.transferencia_nombre] = (map[r.transferencia_nombre] || 0) + r.monto_total;
+        if (r.transferencia_nombre) { const key = stripAccents(r.transferencia_nombre); map[key] = (map[key] || 0) + r.monto_total; }
       });
       const sorted = Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
       const total = curRecords.reduce((s, r) => s + r.monto_total, 0);
