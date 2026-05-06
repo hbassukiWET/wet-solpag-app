@@ -441,15 +441,15 @@ const KPIDashboard = () => {
       {/* SECCIÓN 3 - Distribución del gasto */}
       <div className="grid md:grid-cols-2 gap-4">
         <Card className="rounded-2xl shadow-sm border-slate-200">
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold text-slate-700">Gasto por empresa (MXN eq.)</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-[13px] font-semibold uppercase tracking-[0.05em] text-[#4A5568]">Gasto por empresa (MXN eq.)</CardTitle></CardHeader>
           <CardContent className="h-72">
             {byEmpresa.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={byEmpresa} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={95} paddingAngle={2} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                    {byEmpresa.map((d, i) => <Cell key={i} fill={EMPRESA_COLORS[d.name] || TREEMAP_COLORS[i % TREEMAP_COLORS.length]} />)}
+                  <Pie data={byEmpresa} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={95} paddingAngle={2} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={{ stroke: "#CBD5E0" }} style={{ fontSize: 12, fill: "#2D3748", fontWeight: 500 }}>
+                    {byEmpresa.map((d, i) => <Cell key={i} fill={EMPRESA_COLORS[d.name] || TREEMAP_SCALE[i % TREEMAP_SCALE.length]} />)}
                   </Pie>
-                  <Tooltip formatter={(v: number) => fmtMXN(v)} />
+                  <Tooltip content={<NavyTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
             ) : <p className="text-slate-400 text-sm text-center pt-20">Sin datos</p>}
@@ -458,16 +458,16 @@ const KPIDashboard = () => {
 
         <Card className="rounded-2xl shadow-sm border-slate-200">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-slate-700">Gasto por moneda (MXN eq.)</CardTitle>
+            <CardTitle className="text-[13px] font-semibold uppercase tracking-[0.05em] text-[#4A5568]">Gasto por moneda (MXN eq.)</CardTitle>
           </CardHeader>
           <CardContent className="h-72">
             {byMoneda.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={byMoneda} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={95} paddingAngle={2} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                    {byMoneda.map((d, i) => <Cell key={i} fill={CURRENCY_COLORS[d.name] || TREEMAP_COLORS[i]} />)}
+                  <Pie data={byMoneda} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={95} paddingAngle={2} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={{ stroke: "#CBD5E0" }} style={{ fontSize: 12, fill: "#2D3748", fontWeight: 500 }}>
+                    {byMoneda.map((d, i) => <Cell key={i} fill={CURRENCY_COLORS[d.name] || TREEMAP_SCALE[i % TREEMAP_SCALE.length]} />)}
                   </Pie>
-                  <Tooltip formatter={(v: number) => fmtMXN(v)} />
+                  <Tooltip content={<NavyTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
             ) : <p className="text-slate-400 text-sm text-center pt-20">Sin datos</p>}
@@ -478,7 +478,7 @@ const KPIDashboard = () => {
       {/* SECCIÓN 4 - Treemap proveedores */}
       <Card className="rounded-2xl shadow-sm border-slate-200">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-slate-700">Distribución por proveedor (MXN eq.)</CardTitle>
+          <CardTitle className="text-[13px] font-semibold uppercase tracking-[0.05em] text-[#4A5568]">Distribución por proveedor (MXN eq.)</CardTitle>
         </CardHeader>
         <CardContent className="h-96">
           {treemapData.length > 0 ? (
@@ -489,7 +489,7 @@ const KPIDashboard = () => {
                 stroke="#fff"
                 content={<TreemapNode />}
               >
-                <Tooltip formatter={(v: number) => fmtMXN(v)} />
+                <Tooltip content={<NavyTooltip />} />
               </Treemap>
             </ResponsiveContainer>
           ) : <p className="text-slate-400 text-sm text-center pt-20">Sin datos</p>}
