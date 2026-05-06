@@ -429,8 +429,8 @@ const KPIDashboard = () => {
           icon={Clock}
           label="Días promedio al pago"
           tone="navy"
-          mainValue={`${diasPromedio}`}
-          subValues={["días desde solicitud"]}
+          mainValue={`${diasPromedioInfo.avg.toFixed(1)} días`}
+          subValues={[`Basado en ${diasPromedioInfo.validos} de ${diasPromedioInfo.totalPagados} registros pagados`]}
         />
         <KpiCard
           icon={FileX}
