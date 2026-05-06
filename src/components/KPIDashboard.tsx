@@ -86,6 +86,8 @@ const KPIDashboard = () => {
   const [filterSolicitante, setFilterSolicitante] = useState("all");
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
+  const [openFrom, setOpenFrom] = useState(false);
+  const [openTo, setOpenTo] = useState(false);
 
   const loadRecords = async () => {
     setLoading(true);
@@ -264,7 +266,7 @@ const KPIDashboard = () => {
             </div>
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">Desde</label>
-              <Popover>
+              <Popover open={openFrom} onOpenChange={setOpenFrom}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className={cn("w-[140px] h-9 justify-start text-left text-sm", !dateFrom && "text-muted-foreground")}>
                     <CalendarIcon className="mr-1 h-3.5 w-3.5" />
@@ -272,13 +274,13 @@ const KPIDashboard = () => {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} locale={es} className="pointer-events-auto" />
+                  <Calendar mode="single" selected={dateFrom} onSelect={(d) => { setDateFrom(d); setOpenFrom(false); }} locale={es} className="pointer-events-auto" />
                 </PopoverContent>
               </Popover>
             </div>
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">Hasta</label>
-              <Popover>
+              <Popover open={openTo} onOpenChange={setOpenTo}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className={cn("w-[140px] h-9 justify-start text-left text-sm", !dateTo && "text-muted-foreground")}>
                     <CalendarIcon className="mr-1 h-3.5 w-3.5" />
@@ -286,7 +288,7 @@ const KPIDashboard = () => {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={dateTo} onSelect={setDateTo} locale={es} className="pointer-events-auto" />
+                  <Calendar mode="single" selected={dateTo} onSelect={(d) => { setDateTo(d); setOpenTo(false); }} locale={es} className="pointer-events-auto" />
                 </PopoverContent>
               </Popover>
             </div>
