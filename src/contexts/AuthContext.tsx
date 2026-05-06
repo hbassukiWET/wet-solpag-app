@@ -8,8 +8,13 @@ interface AuthContextType {
   handleLogout: () => void;
 }
 
-const APP_PASSWORD = "fact2";
-const STORAGE_KEY = "auth_remembered";
+const STORAGE_KEY = "auth_remembered_user";
+
+const PASSWORD_USERS: Record<string, UserProfile> = {
+  fact: { email: "gla@wilbureagle.com", name: "GLA" },
+  fact2: { email: "rsosa@wilbureagle.com", name: "R. Sosa" },
+  fact3: { email: "otros@wilbureagle.com", name: "Otros WET" },
+};
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -19,15 +24,10 @@ export const useAuth = () => {
   return ctx;
 };
 
-const DEFAULT_USER: UserProfile = {
-  email: "invitado@wilbureagle.com",
-  name: "Invitado",
-  picture: undefined,
-};
-
 const getInitialUser = (): UserProfile | null => {
   try {
-    if (localStorage.getItem(STORAGE_KEY) === "1") return DEFAULT_USER;
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw) as UserProfile;
   } catch {
     // ignore
   }
@@ -39,17 +39,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loginError, setLoginError] = useState<string | null>(null);
 
   const handleLoginWithPassword = useCallback((password: string, remember: boolean) => {
-    if (password !== APP_PASSWORD) {
+    const profile = PASSWORD_USERS[password.trim().toLowerCase()];
+    if (!profile) {
       setLoginError("Contraseña incorrecta.");
       return false;
     }
     try {
-      if (remember) localStorage.setItem(STORAGE_KEY, "1");
+      if (remember) localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
       else localStorage.removeItem(STORAGE_KEY);
     } catch {
       // ignore
     }
-    setUser(DEFAULT_USER);
+    setUser(profile);
     setLoginError(null);
     return true;
   }, []);
