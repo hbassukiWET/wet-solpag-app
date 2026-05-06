@@ -1,9 +1,20 @@
+import { useState, type FormEvent } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { GoogleLogin } from "@react-oauth/google";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
 
 const LoginPage = () => {
-  const { loginError, handleLoginSuccess } = useAuth();
+  const { loginError, handleLoginWithPassword } = useAuth();
+  const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(true);
+
+  const onSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    handleLoginWithPassword(password, remember);
+  };
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -28,21 +39,32 @@ const LoginPage = () => {
               {loginError}
             </div>
           )}
-          <div className="flex justify-center">
-            <GoogleLogin
-              onSuccess={handleLoginSuccess}
-              onError={() => {}}
-              theme="outline"
-              size="large"
-              text="signin_with"
-              width="320"
-            />
-          </div>
-          <p className="text-xs text-muted-foreground text-center">
-            Solo cuentas @wilbureagle.com
-          </p>
+          <form onSubmit={onSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="password">Contraseña</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoFocus
+                required
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="remember"
+                checked={remember}
+                onCheckedChange={(v) => setRemember(v === true)}
+              />
+              <Label htmlFor="remember" className="text-sm font-normal cursor-pointer">
+                Recordarme en este dispositivo
+              </Label>
+            </div>
+            <Button type="submit" className="w-full">Ingresar</Button>
+          </form>
           <p className="text-[10px] text-muted-foreground/50 text-center pt-2">
-            V-1.1
+            V-1.2
           </p>
         </CardContent>
       </Card>
