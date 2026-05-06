@@ -538,21 +538,50 @@ const KpiCard = ({ icon: Icon, label, mainValue, subValues = [], tone = "navy" }
   );
 };
 
-// Treemap custom node
+// Tooltip navy unificado
+const NavyTooltip = ({ active, payload }: any) => {
+  if (!active || !payload || !payload.length) return null;
+  const p = payload[0];
+  const name = p.name || p.payload?.name || "";
+  const value = Number(p.value || p.payload?.size || 0);
+  // calcular % usando dataset total cuando esté disponible
+  let pctStr = "";
+  const total = p.payload?.__total;
+  if (typeof total === "number" && total > 0) {
+    pctStr = ` · ${((value / total) * 100).toFixed(1)}%`;
+  }
+  return (
+    <div style={{ background: "#1E3A5F", color: "#fff", padding: "8px 12px", borderRadius: 8, fontSize: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }}>
+      <div style={{ fontWeight: 600, marginBottom: 2 }}>{name}</div>
+      <div style={{ opacity: 0.9 }}>{fmtMXN(value)}{pctStr}</div>
+    </div>
+  );
+};
+
+// Treemap custom node — escala azul según tamaño
 const TreemapNode = (props: any) => {
-  const { x, y, width, height, name, size, index } = props;
-  const fill = TREEMAP_COLORS[index % TREEMAP_COLORS.length];
+  const { x, y, width, height, name, size, root } = props;
+  // determinar tier por tamaño relativo al máximo del dataset
+  let fill = "#C8E6F0";
+  if (root && Array.isArray(root.children) && root.children.length > 0) {
+    const max = root.children[0].size || 1;
+    const ratio = (size || 0) / max;
+    if (ratio >= 0.6) fill = "#1E3A5F";
+    else if (ratio >= 0.25) fill = "#2E86AB";
+    else if (ratio >= 0.08) fill = "#90C4D8";
+    else fill = "#C8E6F0";
+  }
   const showLabel = width > 70 && height > 36;
   return (
     <g>
       <rect x={x} y={y} width={width} height={height} style={{ fill, stroke: "#fff", strokeWidth: 2 }} />
       {showLabel && (
         <>
-          <text x={x + 8} y={y + 18} fill="#fff" fontSize={11} fontWeight={600} style={{ pointerEvents: "none" }}>
+          <text x={x + 8} y={y + 18} fill="#fff" fontSize={11} fontWeight={700} style={{ pointerEvents: "none" }}>
             {String(name).length > Math.floor(width / 7) ? String(name).slice(0, Math.floor(width / 7) - 1) + "…" : name}
           </text>
           {height > 50 && (
-            <text x={x + 8} y={y + 34} fill="#fff" fontSize={10} opacity={0.85} style={{ pointerEvents: "none" }}>
+            <text x={x + 8} y={y + 34} fill="#fff" fontSize={10} fontWeight={400} style={{ pointerEvents: "none" }}>
               ${(size / 1000).toFixed(0)}k
             </text>
           )}
