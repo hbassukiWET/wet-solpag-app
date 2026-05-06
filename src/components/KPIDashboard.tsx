@@ -37,15 +37,12 @@ const EMPRESA_COLORS: Record<string, string> = {
 };
 
 const CURRENCY_COLORS: Record<string, string> = {
-  MXN: "#1B2A6B",
-  USD: "#2E7D32",
-  EUR: "#F5C400",
+  MXN: "#1E3A5F",
+  USD: "#2E86AB",
+  EUR: "#A8DADC",
 };
 
-const TREEMAP_COLORS = [
-  "#1B2A6B", "#2E75B6", "#2E7D32", "#F5C400", "#CC0000",
-  "#5B6FA0", "#3D9970", "#B8860B", "#8B0000", "#4682B4",
-];
+const TREEMAP_SCALE = ["#1E3A5F", "#2E86AB", "#90C4D8", "#C8E6F0"];
 
 function parseDate(raw: string): Date | null {
   if (!raw) return null;
@@ -198,7 +195,9 @@ const KPIDashboard = () => {
       const e = r.empresa || "—";
       map[e] = (map[e] || 0) + toMXN(r.monto_total, r.moneda);
     });
-    return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+    const arr = Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+    const total = arr.reduce((s, d) => s + d.value, 0);
+    return arr.map(d => ({ ...d, __total: total }));
   }, [filtered, usdRate, eurRate]);
 
   // Donut por Moneda (MXN equiv)
@@ -207,7 +206,9 @@ const KPIDashboard = () => {
     filtered.forEach(r => {
       map[r.moneda] = (map[r.moneda] || 0) + toMXN(r.monto_total, r.moneda);
     });
-    return Object.entries(map).map(([name, value]) => ({ name, value })).filter(d => d.value > 0).sort((a, b) => b.value - a.value);
+    const arr = Object.entries(map).map(([name, value]) => ({ name, value })).filter(d => d.value > 0).sort((a, b) => b.value - a.value);
+    const total = arr.reduce((s, d) => s + d.value, 0);
+    return arr.map(d => ({ ...d, __total: total }));
   }, [filtered, usdRate, eurRate]);
 
   // Section 4: Treemap proveedores
@@ -218,10 +219,12 @@ const KPIDashboard = () => {
       const k = stripAccents(r.transferencia_nombre);
       map[k] = (map[k] || 0) + toMXN(r.monto_total, r.moneda);
     });
-    return Object.entries(map)
+    const arr = Object.entries(map)
       .map(([name, size]) => ({ name, size }))
       .sort((a, b) => b.size - a.size)
       .slice(0, 30);
+    const total = arr.reduce((s, d) => s + d.size, 0);
+    return arr.map(d => ({ ...d, __total: total }));
   }, [filtered, usdRate, eurRate]);
 
   // Section 6: Timeline pendientes
@@ -444,15 +447,15 @@ const KPIDashboard = () => {
       {/* SECCIÓN 3 - Distribución del gasto */}
       <div className="grid md:grid-cols-2 gap-4">
         <Card className="rounded-2xl shadow-sm border-slate-200">
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold text-slate-700">Gasto por empresa (MXN eq.)</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-[13px] font-semibold uppercase tracking-[0.05em] text-[#4A5568]">Gasto por empresa (MXN eq.)</CardTitle></CardHeader>
           <CardContent className="h-72">
             {byEmpresa.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={byEmpresa} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={95} paddingAngle={2} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                    {byEmpresa.map((d, i) => <Cell key={i} fill={EMPRESA_COLORS[d.name] || TREEMAP_COLORS[i % TREEMAP_COLORS.length]} />)}
+                  <Pie data={byEmpresa} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={95} paddingAngle={2} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={{ stroke: "#CBD5E0" }} style={{ fontSize: 12, fill: "#2D3748", fontWeight: 500 }}>
+                    {byEmpresa.map((d, i) => <Cell key={i} fill={EMPRESA_COLORS[d.name] || TREEMAP_SCALE[i % TREEMAP_SCALE.length]} />)}
                   </Pie>
-                  <Tooltip formatter={(v: number) => fmtMXN(v)} />
+                  <Tooltip content={<NavyTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
             ) : <p className="text-slate-400 text-sm text-center pt-20">Sin datos</p>}
@@ -461,16 +464,16 @@ const KPIDashboard = () => {
 
         <Card className="rounded-2xl shadow-sm border-slate-200">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-slate-700">Gasto por moneda (MXN eq.)</CardTitle>
+            <CardTitle className="text-[13px] font-semibold uppercase tracking-[0.05em] text-[#4A5568]">Gasto por moneda (MXN eq.)</CardTitle>
           </CardHeader>
           <CardContent className="h-72">
             {byMoneda.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={byMoneda} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={95} paddingAngle={2} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                    {byMoneda.map((d, i) => <Cell key={i} fill={CURRENCY_COLORS[d.name] || TREEMAP_COLORS[i]} />)}
+                  <Pie data={byMoneda} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={95} paddingAngle={2} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={{ stroke: "#CBD5E0" }} style={{ fontSize: 12, fill: "#2D3748", fontWeight: 500 }}>
+                    {byMoneda.map((d, i) => <Cell key={i} fill={CURRENCY_COLORS[d.name] || TREEMAP_SCALE[i % TREEMAP_SCALE.length]} />)}
                   </Pie>
-                  <Tooltip formatter={(v: number) => fmtMXN(v)} />
+                  <Tooltip content={<NavyTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
             ) : <p className="text-slate-400 text-sm text-center pt-20">Sin datos</p>}
@@ -481,7 +484,7 @@ const KPIDashboard = () => {
       {/* SECCIÓN 4 - Treemap proveedores */}
       <Card className="rounded-2xl shadow-sm border-slate-200">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-slate-700">Distribución por proveedor (MXN eq.)</CardTitle>
+          <CardTitle className="text-[13px] font-semibold uppercase tracking-[0.05em] text-[#4A5568]">Distribución por proveedor (MXN eq.)</CardTitle>
         </CardHeader>
         <CardContent className="h-96">
           {treemapData.length > 0 ? (
@@ -492,7 +495,7 @@ const KPIDashboard = () => {
                 stroke="#fff"
                 content={<TreemapNode />}
               >
-                <Tooltip formatter={(v: number) => fmtMXN(v)} />
+                <Tooltip content={<NavyTooltip />} />
               </Treemap>
             </ResponsiveContainer>
           ) : <p className="text-slate-400 text-sm text-center pt-20">Sin datos</p>}
@@ -541,21 +544,50 @@ const KpiCard = ({ icon: Icon, label, mainValue, subValues = [], tone = "navy" }
   );
 };
 
-// Treemap custom node
+// Tooltip navy unificado
+const NavyTooltip = ({ active, payload }: any) => {
+  if (!active || !payload || !payload.length) return null;
+  const p = payload[0];
+  const name = p.name || p.payload?.name || "";
+  const value = Number(p.value || p.payload?.size || 0);
+  // calcular % usando dataset total cuando esté disponible
+  let pctStr = "";
+  const total = p.payload?.__total;
+  if (typeof total === "number" && total > 0) {
+    pctStr = ` · ${((value / total) * 100).toFixed(1)}%`;
+  }
+  return (
+    <div style={{ background: "#1E3A5F", color: "#fff", padding: "8px 12px", borderRadius: 8, fontSize: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }}>
+      <div style={{ fontWeight: 600, marginBottom: 2 }}>{name}</div>
+      <div style={{ opacity: 0.9 }}>{fmtMXN(value)}{pctStr}</div>
+    </div>
+  );
+};
+
+// Treemap custom node — escala azul según tamaño
 const TreemapNode = (props: any) => {
-  const { x, y, width, height, name, size, index } = props;
-  const fill = TREEMAP_COLORS[index % TREEMAP_COLORS.length];
+  const { x, y, width, height, name, size, root } = props;
+  // determinar tier por tamaño relativo al máximo del dataset
+  let fill = "#C8E6F0";
+  if (root && Array.isArray(root.children) && root.children.length > 0) {
+    const max = root.children[0].size || 1;
+    const ratio = (size || 0) / max;
+    if (ratio >= 0.6) fill = "#1E3A5F";
+    else if (ratio >= 0.25) fill = "#2E86AB";
+    else if (ratio >= 0.08) fill = "#90C4D8";
+    else fill = "#C8E6F0";
+  }
   const showLabel = width > 70 && height > 36;
   return (
     <g>
       <rect x={x} y={y} width={width} height={height} style={{ fill, stroke: "#fff", strokeWidth: 2 }} />
       {showLabel && (
         <>
-          <text x={x + 8} y={y + 18} fill="#fff" fontSize={11} fontWeight={600} style={{ pointerEvents: "none" }}>
+          <text x={x + 8} y={y + 18} fill="#fff" fontSize={11} fontWeight={700} style={{ pointerEvents: "none" }}>
             {String(name).length > Math.floor(width / 7) ? String(name).slice(0, Math.floor(width / 7) - 1) + "…" : name}
           </text>
           {height > 50 && (
-            <text x={x + 8} y={y + 34} fill="#fff" fontSize={10} opacity={0.85} style={{ pointerEvents: "none" }}>
+            <text x={x + 8} y={y + 34} fill="#fff" fontSize={10} fontWeight={400} style={{ pointerEvents: "none" }}>
               ${(size / 1000).toFixed(0)}k
             </text>
           )}
