@@ -25,12 +25,7 @@ interface DecodedToken {
 }
 
 const getInitialUser = (): UserProfile | null => {
-  const params = new URLSearchParams(window.location.search);
-  if (params.get("dev") === "true") {
-    return { email: "dev@wilbureagle.com", name: "Dev User", picture: undefined };
-  }
-  const saved = sessionStorage.getItem("auth_user");
-  return saved ? JSON.parse(saved) : null;
+  return { email: "invitado@wilbureagle.com", name: "Invitado", picture: undefined };
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
