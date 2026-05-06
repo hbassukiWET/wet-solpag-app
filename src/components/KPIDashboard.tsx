@@ -152,24 +152,31 @@ const KPIDashboard = () => {
   const pendUSD = pendientes.filter(r => r.moneda === "USD").reduce((s, r) => s + r.monto_total, 0);
   const pendEUR = pendientes.filter(r => r.moneda === "EUR").reduce((s, r) => s + r.monto_total, 0);
 
-  // KPI 2: Pagado este mes (en MXN equivalente)
-  const pagadoMes = useMemo(() => {
+  // KPI 2: Pagado este mes (por moneda)
+  const pagadoMesPorMoneda = useMemo(() => {
     const m = today.getMonth(), y = today.getFullYear();
-    return filtered.filter(r => {
-      if (!isPaid(r)) return false;
+    const acc = { MXN: 0, USD: 0, EUR: 0 } as Record<string, number>;
+    filtered.forEach(r => {
+      if (!isPaid(r)) return;
       const d = parseDate(r.fecha_pago_real);
-      return d && d.getMonth() === m && d.getFullYear() === y;
-    }).reduce((s, r) => s + toMXN(r.monto_total, r.moneda), 0);
-  }, [filtered, today, usdRate, eurRate]);
+      if (!d || d.getMonth() !== m || d.getFullYear() !== y) return;
+      acc[r.moneda] = (acc[r.moneda] || 0) + r.monto_total;
+    });
+    return acc;
+  }, [filtered, today]);
 
-  // KPI 3: Días promedio al pago
+  // KPI 3: Días promedio al pago — pagados con fecha de solicitud + fecha real (o fallback a tentativa)
   const diasPromedio = useMemo(() => {
     let sum = 0, count = 0;
     filtered.forEach(r => {
-      if (!isPaid(r)) return;
       const fs = parseDate(r.fecha_solicitud);
-      const fp = parseDate(r.fecha_pago_real);
-      if (fs && fp) { sum += daysBetween(fs, fp); count++; }
+      if (!fs) return;
+      const fp = parseDate(r.fecha_pago_real) || (isPaid(r) ? parseDate(r.fecha_pago) : null);
+      if (!fp) return;
+      const diff = daysBetween(fs, fp);
+      if (diff < 0) return;
+      sum += diff;
+      count++;
     });
     return count > 0 ? Math.round(sum / count) : 0;
   }, [filtered]);
