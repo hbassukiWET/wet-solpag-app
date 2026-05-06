@@ -329,41 +329,7 @@ const KPIDashboard = () => {
       )}
 
       {/* SECCIÓN 2 - KPIs principales */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <KpiCard
-          icon={Wallet}
-          label="Pendiente de pago"
-          tone="navy"
-          mainValue={fmtCur(pendMXN, "MXN")}
-          subValues={[
-            pendUSD > 0 ? fmtCur(pendUSD, "USD") : null,
-            pendEUR > 0 ? fmtCur(pendEUR, "EUR") : null,
-          ].filter(Boolean) as string[]}
-        />
-        <KpiCard
-          icon={CheckCircle2}
-          label="Pagado este mes"
-          tone="green"
-          mainValue={fmtMXN(pagadoMes)}
-          subValues={["MXN equivalente"]}
-        />
-        <KpiCard
-          icon={Clock}
-          label="Días promedio al pago"
-          tone="navy"
-          mainValue={`${diasPromedio}`}
-          subValues={["días desde solicitud"]}
-        />
-        <KpiCard
-          icon={FileX}
-          label="SPs sin OC"
-          tone={sinOC > 15 ? "red" : sinOC > 5 ? "amber" : "navy"}
-          mainValue={`${sinOC}`}
-          subValues={["solicitudes"]}
-        />
-      </div>
-
-      {/* SECCIÓN - Timeline pendientes (justo debajo del banner) */}
+      {/* Timeline pendientes - justo debajo del banner rojo */}
       <Card className="rounded-2xl shadow-sm border-slate-200">
         <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
           <CardTitle className="text-sm font-semibold text-slate-700">
@@ -413,6 +379,40 @@ const KPIDashboard = () => {
           ) : <p className="text-slate-400 text-sm text-center py-10">Sin solicitudes pendientes</p>}
         </CardContent>
       </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <KpiCard
+          icon={Wallet}
+          label="Pendiente de pago"
+          tone="navy"
+          mainValue={fmtCur(pendMXN, "MXN")}
+          subValues={[
+            pendUSD > 0 ? fmtCur(pendUSD, "USD") : null,
+            pendEUR > 0 ? fmtCur(pendEUR, "EUR") : null,
+          ].filter(Boolean) as string[]}
+        />
+        <KpiCard
+          icon={CheckCircle2}
+          label="Pagado este mes"
+          tone="green"
+          mainValue={fmtMXN(pagadoMes)}
+          subValues={["MXN equivalente"]}
+        />
+        <KpiCard
+          icon={Clock}
+          label="Días promedio al pago"
+          tone="navy"
+          mainValue={`${diasPromedio}`}
+          subValues={["días desde solicitud"]}
+        />
+        <KpiCard
+          icon={FileX}
+          label="SPs sin OC"
+          tone={sinOC > 15 ? "red" : sinOC > 5 ? "amber" : "navy"}
+          mainValue={`${sinOC}`}
+          subValues={["solicitudes"]}
+        />
+      </div>
 
       {/* SECCIÓN 3 - Distribución del gasto */}
       <div className="grid md:grid-cols-2 gap-4">
