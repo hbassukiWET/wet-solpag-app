@@ -71,6 +71,15 @@ function daysBetween(a: Date, b: Date) {
   return Math.round((b.getTime() - a.getTime()) / 86400000);
 }
 
+function fmtDate(raw: string): string {
+  const d = parseDate(raw);
+  if (!d) return raw || "—";
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yy = d.getFullYear();
+  return `${dd}/${mm}/${yy}`;
+}
+
 function isPaid(r: DashRecord): boolean {
   return r.pagado === true;
 }
