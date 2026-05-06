@@ -352,7 +352,7 @@ const KPIDashboard = () => {
                       <TableCell className="text-xs max-w-[200px] truncate">{r.transferencia_nombre}</TableCell>
                       <TableCell className="text-xs text-right font-medium">{fmtCur(r.monto_total, r.moneda)}</TableCell>
                       <TableCell className="text-xs text-slate-500">{r.moneda}</TableCell>
-                      <TableCell className="text-xs">{r.fecha_pago || "—"}</TableCell>
+                      <TableCell className="text-xs">{fmtDate(r.fecha_pago)}</TableCell>
                       <TableCell className={cn("text-xs text-right font-semibold", vencida ? "text-red-600" : dias !== null && dias <= 3 ? "text-amber-600" : "text-slate-600")}>
                         {dias === null ? "—" : vencida ? `${Math.abs(dias)}d vencida` : `${dias}d`}
                       </TableCell>
