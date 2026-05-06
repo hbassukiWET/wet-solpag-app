@@ -165,20 +165,24 @@ const KPIDashboard = () => {
     return acc;
   }, [filtered, today]);
 
-  // KPI 3: Días promedio al pago — pagados con fecha de solicitud + fecha real (o fallback a tentativa)
-  const diasPromedio = useMemo(() => {
+  // KPI 3: Días promedio al pago — solo pagados con ambas fechas válidas
+  const diasPromedioInfo = useMemo(() => {
+    const pagadosArr = filtered.filter(isPaid);
     let sum = 0, count = 0;
-    filtered.forEach(r => {
+    pagadosArr.forEach(r => {
       const fs = parseDate(r.fecha_solicitud);
-      if (!fs) return;
-      const fp = parseDate(r.fecha_pago_real) || (isPaid(r) ? parseDate(r.fecha_pago) : null);
-      if (!fp) return;
-      const diff = daysBetween(fs, fp);
+      const fp = parseDate(r.fecha_pago_real);
+      if (!fs || !fp) return;
+      const diff = Math.round((fp.getTime() - fs.getTime()) / 86400000);
       if (diff < 0) return;
       sum += diff;
       count++;
     });
-    return count > 0 ? Math.round(sum / count) : 0;
+    return {
+      avg: count > 0 ? sum / count : 0,
+      validos: count,
+      totalPagados: pagadosArr.length,
+    };
   }, [filtered]);
 
   // KPI 4: Sin OC
@@ -425,8 +429,8 @@ const KPIDashboard = () => {
           icon={Clock}
           label="Días promedio al pago"
           tone="navy"
-          mainValue={`${diasPromedio}`}
-          subValues={["días desde solicitud"]}
+          mainValue={`${diasPromedioInfo.avg.toFixed(1)} días`}
+          subValues={[`Basado en ${diasPromedioInfo.validos} de ${diasPromedioInfo.totalPagados} registros pagados`]}
         />
         <KpiCard
           icon={FileX}
