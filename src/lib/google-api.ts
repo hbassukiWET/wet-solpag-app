@@ -167,6 +167,8 @@ export async function fetchRecords(): Promise<
     impuestos?: number;
     comentarios?: string;
     solicitante?: string;
+    pagado?: boolean;
+    fecha_pago_real?: string;
   }>
 > {
   const result = await callAppsScript<{ records?: any[]; data?: any[] }>({ action: 'getRecords' });
@@ -176,6 +178,20 @@ export async function fetchRecords(): Promise<
   if (Array.isArray(result.data)) return result.data;
   console.warn('fetchRecords: unexpected response shape', result);
   return [];
+}
+
+/** Update Pagado status and fecha de pago real for a given num_sp */
+export async function updatePagado(
+  num_sp: string,
+  pagado: boolean,
+  fecha_pago_real: string,
+): Promise<{ success: boolean }> {
+  return callAppsScript({
+    action: 'updatePagado',
+    num_sp,
+    pagado,
+    fecha_pago_real,
+  });
 }
 
 function uint8ArrayToBase64(bytes: Uint8Array): string {

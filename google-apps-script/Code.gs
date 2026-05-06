@@ -23,6 +23,8 @@ function doPost(e) {
         return jsonResponse(getRecords());
       case 'uploadPDF':
         return jsonResponse(uploadPDF(body));
+      case 'updatePagado':
+        return jsonResponse(updatePagado(body));
       default:
         return jsonResponse({ error: 'Acción no reconocida' }, 400);
     }
@@ -204,10 +206,12 @@ function getRecords() {
   var lastRow = sheet.getLastRow();
   if (lastRow <= 1) return { records: [] };
 
-  var data = sheet.getRange(2, 1, lastRow - 1, 17).getValues();
+  var data = sheet.getRange(2, 1, lastRow - 1, 19).getValues();
   var records = [];
   for (var i = 0; i < data.length; i++) {
     var r = data[i];
+    var pagadoRaw = r[17];
+    var pagado = pagadoRaw === true || String(pagadoRaw).toLowerCase() === 'true' || String(pagadoRaw).toLowerCase() === 'si' || String(pagadoRaw).toLowerCase() === 'sí' || String(pagadoRaw) === '1';
     records.push({
       num_sp: String(r[0]),
       marca_temporal: String(r[1]),
@@ -217,8 +221,31 @@ function getRecords() {
       monto_total: Number(r[12]) || 0,
       moneda: String(r[7]),
       fecha_pago: String(r[5]),
-      url_drive: String(r[16])
+      url_drive: String(r[16]),
+      pagado: pagado,
+      fecha_pago_real: r[18] ? String(r[18]) : ''
     });
   }
   return { records: records };
+}
+
+// ─── UPDATE PAGADO ───
+
+function updatePagado(data) {
+  var sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+  var lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return { success: false, error: 'Sin registros' };
+
+  var numTarget = String(Number(data.num_sp));
+  var spValues = sheet.getRange('A2:A' + lastRow).getValues();
+  for (var i = 0; i < spValues.length; i++) {
+    if (String(spValues[i][0]).trim() === numTarget) {
+      var targetRow = i + 2;
+      var pagado = data.pagado === true;
+      sheet.getRange(targetRow, 18).setValue(pagado);
+      sheet.getRange(targetRow, 19).setValue(pagado ? (data.fecha_pago_real || '') : '');
+      return { success: true, row: targetRow };
+    }
+  }
+  return { success: false, error: 'No se encontró el registro' };
 }
