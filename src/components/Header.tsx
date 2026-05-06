@@ -10,7 +10,6 @@ interface HeaderProps {
 }
 
 const Header = ({ user, onLogout, activeTab, onTabChange }: HeaderProps) => {
-  void user;
   return (
     <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
@@ -57,10 +56,16 @@ const Header = ({ user, onLogout, activeTab, onTabChange }: HeaderProps) => {
           </button>
         </nav>
 
-        <Button variant="ghost" size="sm" onClick={onLogout} className="gap-2">
-          <LogOut className="w-4 h-4" />
-          <span className="hidden sm:inline">Salir</span>
-        </Button>
+        <div className="flex items-center gap-3">
+          <div className="hidden sm:flex flex-col text-right leading-tight">
+            <span className="text-xs font-medium">{user.name}</span>
+            <span className="text-[10px] text-muted-foreground">{user.email}</span>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onLogout} className="gap-2">
+            <LogOut className="w-4 h-4" />
+            <span className="hidden sm:inline">Salir</span>
+          </Button>
+        </div>
       </div>
 
       {/* Mobile tabs */}
