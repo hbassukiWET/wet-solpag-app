@@ -187,6 +187,29 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
     }
   };
 
+  const updateFechaPagoReal = async (record: SheetRecord, date: Date | undefined) => {
+    if (!date) return;
+    const fecha = format(date, "dd/MM/yyyy");
+    const previo = record.fecha_pago_real;
+    setRecords((prev) =>
+      prev.map((r) =>
+        r.num_sp === record.num_sp ? { ...r, pagado: true, fecha_pago_real: fecha } : r,
+      ),
+    );
+    try {
+      await apiUpdatePagado(record.num_sp, true, fecha);
+      toast.success("Fecha de pago actualizada");
+    } catch (err) {
+      console.error("updateFechaPago error", err);
+      toast.error("No se pudo actualizar la fecha de pago");
+      setRecords((prev) =>
+        prev.map((r) =>
+          r.num_sp === record.num_sp ? { ...r, fecha_pago_real: previo } : r,
+        ),
+      );
+    }
+  };
+
   return (
     <Card className="glass-card overflow-hidden">
       <CardHeader className="flex flex-row items-center justify-between pb-4">
