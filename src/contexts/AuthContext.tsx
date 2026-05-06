@@ -14,6 +14,7 @@ const PASSWORD_USERS: Record<string, UserProfile> = {
   fact: { email: "gla@wilbureagle.com", name: "GLA" },
   fact2: { email: "rsosa@wilbureagle.com", name: "R. Sosa" },
   fact3: { email: "otros@wilbureagle.com", name: "Otros WET" },
+  fact4: { email: "sdma@wilbureagle.com", name: "SDMA" },
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
