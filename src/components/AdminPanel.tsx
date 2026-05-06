@@ -74,6 +74,8 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
   const [filterFechaDesde, setFilterFechaDesde] = useState<Date | undefined>(undefined);
   const [filterFechaHasta, setFilterFechaHasta] = useState<Date | undefined>(undefined);
   const [filterNumSP, setFilterNumSP] = useState("");
+  const [filterPagado, setFilterPagado] = useState<string>("all");
+  const [openCalRow, setOpenCalRow] = useState<string | null>(null);
 
   const loadRecords = async () => {
     setLoading(true);
@@ -143,11 +145,19 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
         if (filterFechaHasta && recDay > filterFechaHasta) return false;
       }
       if (filterNumSP && !r.num_sp.toLowerCase().includes(filterNumSP.toLowerCase())) return false;
+      if (filterPagado === "pagado" && !r.pagado) return false;
+      if (filterPagado === "pendiente" && r.pagado) return false;
+      if (filterPagado === "vencido") {
+        const fp = parseRecordDate(r.fecha_pago || "");
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (r.pagado || !fp || fp >= today) return false;
+      }
       return true;
     });
-  }, [records, filterEmpresa, filterNombre, filterFechaDesde, filterFechaHasta, filterNumSP]);
+  }, [records, filterEmpresa, filterNombre, filterFechaDesde, filterFechaHasta, filterNumSP, filterPagado]);
 
-  const hasActiveFilters = filterEmpresa !== "all" || filterNombre || !!filterFechaDesde || !!filterFechaHasta || filterNumSP;
+  const hasActiveFilters = filterEmpresa !== "all" || filterNombre || !!filterFechaDesde || !!filterFechaHasta || filterNumSP || filterPagado !== "all";
 
   const clearFilters = () => {
     setFilterEmpresa("all");
@@ -155,6 +165,7 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
     setFilterFechaDesde(undefined);
     setFilterFechaHasta(undefined);
     setFilterNumSP("");
+    setFilterPagado("all");
   };
 
   const empresas = useMemo(() => {
@@ -191,6 +202,7 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
     if (!date) return;
     const fecha = format(date, "dd/MM/yyyy");
     const previo = record.fecha_pago_real;
+    setOpenCalRow(null);
     setRecords((prev) =>
       prev.map((r) =>
         r.num_sp === record.num_sp ? { ...r, pagado: true, fecha_pago_real: fecha } : r,
