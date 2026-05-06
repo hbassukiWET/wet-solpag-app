@@ -397,13 +397,30 @@ const KPIDashboard = () => {
             </div>
           </CardContent>
         </Card>
-        <KpiCard
-          icon={CheckCircle2}
-          label="Pagado este mes"
-          tone="green"
-          mainValue={fmtMXN(pagadoMes)}
-          subValues={["MXN equivalente"]}
-        />
+        <Card className="rounded-2xl shadow-sm border-slate-200 hover:shadow-md transition-shadow">
+          <CardContent className="p-5">
+            <div className="flex items-start justify-between mb-3">
+              <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Pagado este mes</span>
+              <div className="h-9 w-9 rounded-xl flex items-center justify-center bg-emerald-100">
+                <CheckCircle2 className="h-4 w-4 text-emerald-700" />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-[10px] font-semibold text-slate-400 tracking-wider">MXN</span>
+                <span className="text-base font-bold font-heading text-slate-900 truncate">{fmtCur(pagadoMesPorMoneda.MXN || 0, "MXN")}</span>
+              </div>
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-[10px] font-semibold text-slate-400 tracking-wider">USD</span>
+                <span className="text-base font-bold font-heading text-slate-900 truncate">{fmtCur(pagadoMesPorMoneda.USD || 0, "USD")}</span>
+              </div>
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-[10px] font-semibold text-slate-400 tracking-wider">EUR</span>
+                <span className="text-base font-bold font-heading text-slate-900 truncate">{fmtCur(pagadoMesPorMoneda.EUR || 0, "EUR")}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
         <KpiCard
           icon={Clock}
           label="Días promedio al pago"
