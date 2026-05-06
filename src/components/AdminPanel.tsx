@@ -511,9 +511,9 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
                   </TableCell>
                   <TableCell className="px-5 py-3.5 text-right font-mono whitespace-nowrap text-white">
                     <div className="flex flex-col gap-0.5 items-end">
-                      <span><span className="text-[10px] opacity-80 mr-2">MXN</span>{formatCurrency(totalsByCurrency.MXN, "MXN")}</span>
-                      <span><span className="text-[10px] opacity-80 mr-2">USD</span>{formatCurrency(totalsByCurrency.USD, "USD")}</span>
-                      <span><span className="text-[10px] opacity-80 mr-2">EUR</span>{formatCurrency(totalsByCurrency.EUR, "EUR")}</span>
+                      <span><span className="text-[10px] opacity-80 mr-2">MXN</span>${totalsByCurrency.MXN.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span><span className="text-[10px] opacity-80 mr-2">USD</span>${totalsByCurrency.USD.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span><span className="text-[10px] opacity-80 mr-2">EUR</span>€{totalsByCurrency.EUR.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                   </TableCell>
                   <TableCell colSpan={6} className="px-5 py-3.5"></TableCell>
