@@ -1,4 +1,5 @@
-import { Shield } from "lucide-react";
+import { Shield, LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { UserProfile } from "@/types/payment";
 
 interface HeaderProps {
@@ -10,7 +11,6 @@ interface HeaderProps {
 
 const Header = ({ user, onLogout, activeTab, onTabChange }: HeaderProps) => {
   void user;
-  void onLogout;
   return (
     <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
@@ -57,7 +57,10 @@ const Header = ({ user, onLogout, activeTab, onTabChange }: HeaderProps) => {
           </button>
         </nav>
 
-        <div />
+        <Button variant="ghost" size="sm" onClick={onLogout} className="gap-2">
+          <LogOut className="w-4 h-4" />
+          <span className="hidden sm:inline">Salir</span>
+        </Button>
       </div>
 
       {/* Mobile tabs */}
