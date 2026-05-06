@@ -208,6 +208,16 @@ function getRecords() {
 
   var data = sheet.getRange(2, 1, lastRow - 1, 19).getValues();
   var records = [];
+  function fmtDate(v) {
+    if (!v) return '';
+    if (Object.prototype.toString.call(v) === '[object Date]') {
+      var dd = String(v.getDate()).padStart(2, '0');
+      var mm = String(v.getMonth() + 1).padStart(2, '0');
+      var yy = v.getFullYear();
+      return dd + '/' + mm + '/' + yy;
+    }
+    return String(v);
+  }
   for (var i = 0; i < data.length; i++) {
     var r = data[i];
     var pagadoRaw = r[17];
@@ -216,14 +226,21 @@ function getRecords() {
       num_sp: String(r[0]),
       marca_temporal: String(r[1]),
       empresa: String(r[2]),
-      concepto_pago: String(r[9]),
+      orden_compra: String(r[3]),
+      fecha_solicitud: fmtDate(r[4]),
+      fecha_pago: fmtDate(r[5]),
       transferencia_nombre: String(r[6]),
-      monto_total: Number(r[12]) || 0,
       moneda: String(r[7]),
-      fecha_pago: String(r[5]),
+      cuenta_banco: String(r[8]),
+      concepto_pago: String(r[9]),
+      subtotal: Number(r[10]) || 0,
+      impuestos: Number(r[11]) || 0,
+      monto_total: Number(r[12]) || 0,
+      comentarios: String(r[13]),
+      solicitante: String(r[14]),
       url_drive: String(r[16]),
       pagado: pagado,
-      fecha_pago_real: r[18] ? String(r[18]) : ''
+      fecha_pago_real: fmtDate(r[18])
     });
   }
   return { records: records };
