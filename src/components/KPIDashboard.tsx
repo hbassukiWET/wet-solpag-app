@@ -195,7 +195,9 @@ const KPIDashboard = () => {
       const e = r.empresa || "—";
       map[e] = (map[e] || 0) + toMXN(r.monto_total, r.moneda);
     });
-    return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+    const arr = Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+    const total = arr.reduce((s, d) => s + d.value, 0);
+    return arr.map(d => ({ ...d, __total: total }));
   }, [filtered, usdRate, eurRate]);
 
   // Donut por Moneda (MXN equiv)
@@ -204,7 +206,9 @@ const KPIDashboard = () => {
     filtered.forEach(r => {
       map[r.moneda] = (map[r.moneda] || 0) + toMXN(r.monto_total, r.moneda);
     });
-    return Object.entries(map).map(([name, value]) => ({ name, value })).filter(d => d.value > 0).sort((a, b) => b.value - a.value);
+    const arr = Object.entries(map).map(([name, value]) => ({ name, value })).filter(d => d.value > 0).sort((a, b) => b.value - a.value);
+    const total = arr.reduce((s, d) => s + d.value, 0);
+    return arr.map(d => ({ ...d, __total: total }));
   }, [filtered, usdRate, eurRate]);
 
   // Section 4: Treemap proveedores
