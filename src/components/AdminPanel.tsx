@@ -76,6 +76,8 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
   const [filterNumSP, setFilterNumSP] = useState("");
   const [filterPagado, setFilterPagado] = useState<string>("all");
   const [openCalRow, setOpenCalRow] = useState<string | null>(null);
+  const [openDesde, setOpenDesde] = useState(false);
+  const [openHasta, setOpenHasta] = useState(false);
 
   const loadRecords = async () => {
     setLoading(true);
@@ -289,7 +291,7 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-muted-foreground">Fecha Desde</label>
-            <Popover>
+            <Popover open={openDesde} onOpenChange={setOpenDesde}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -306,7 +308,7 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
                 <Calendar
                   mode="single"
                   selected={filterFechaDesde}
-                  onSelect={(date) => setFilterFechaDesde(date)}
+                  onSelect={(date) => { setFilterFechaDesde(date); setOpenDesde(false); }}
                   initialFocus
                   className={cn("p-3 pointer-events-auto")}
                   locale={es}
@@ -316,7 +318,7 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-muted-foreground">Fecha Hasta</label>
-            <Popover>
+            <Popover open={openHasta} onOpenChange={setOpenHasta}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -333,7 +335,7 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
                 <Calendar
                   mode="single"
                   selected={filterFechaHasta}
-                  onSelect={(date) => setFilterFechaHasta(date)}
+                  onSelect={(date) => { setFilterFechaHasta(date); setOpenHasta(false); }}
                   initialFocus
                   className={cn("p-3 pointer-events-auto")}
                   locale={es}
