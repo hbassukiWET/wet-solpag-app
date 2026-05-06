@@ -384,12 +384,19 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredRecords.map((r, i) => (
+                {filteredRecords.map((r, i) => {
+                  const fp = parseRecordDate(r.fecha_pago || "");
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const vencido = !r.pagado && fp && fp < today;
+                  return (
                   <TableRow
                     key={i}
                     className={`border-b border-border/40 transition-colors ${
                       r.pagado
                         ? "bg-emerald-100 dark:bg-emerald-950/40 hover:bg-emerald-200/70 dark:hover:bg-emerald-900/50"
+                        : vencido
+                        ? "bg-red-100 dark:bg-red-950/40 hover:bg-red-200/70 dark:hover:bg-red-900/50"
                         : i % 2 === 1
                         ? "bg-[#F5F5F5] dark:bg-muted/30"
                         : "bg-white dark:bg-background"
@@ -419,8 +426,9 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
                         {r.moneda}
                       </span>
                     </TableCell>
-                    <TableCell className="px-5 py-3.5 whitespace-nowrap text-muted-foreground">
+                    <TableCell className={cn("px-5 py-3.5 whitespace-nowrap", vencido ? "text-red-700 dark:text-red-300 font-semibold" : "text-muted-foreground")}>
                       {formatDateOnly(r.fecha_pago || r.marca_temporal)}
+                      {vencido && <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-red-600 text-white">VENCIDO</span>}
                     </TableCell>
                     <TableCell className="text-center px-5 py-3.5">
                       <Checkbox
@@ -430,7 +438,7 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
                       />
                     </TableCell>
                     <TableCell className="px-5 py-3.5 whitespace-nowrap">
-                      <Popover>
+                      <Popover open={openCalRow === r.num_sp} onOpenChange={(o) => setOpenCalRow(o ? r.num_sp : null)}>
                         <PopoverTrigger asChild>
                           <Button
                             variant="ghost"
@@ -481,7 +489,8 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
                       )}
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
