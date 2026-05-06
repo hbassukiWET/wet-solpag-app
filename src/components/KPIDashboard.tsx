@@ -71,6 +71,15 @@ function daysBetween(a: Date, b: Date) {
   return Math.round((b.getTime() - a.getTime()) / 86400000);
 }
 
+function fmtDate(raw: string): string {
+  const d = parseDate(raw);
+  if (!d) return raw || "—";
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yy = d.getFullYear();
+  return `${dd}/${mm}/${yy}`;
+}
+
 function isPaid(r: DashRecord): boolean {
   return r.pagado === true;
 }
@@ -343,7 +352,7 @@ const KPIDashboard = () => {
                       <TableCell className="text-xs max-w-[200px] truncate">{r.transferencia_nombre}</TableCell>
                       <TableCell className="text-xs text-right font-medium">{fmtCur(r.monto_total, r.moneda)}</TableCell>
                       <TableCell className="text-xs text-slate-500">{r.moneda}</TableCell>
-                      <TableCell className="text-xs">{r.fecha_pago || "—"}</TableCell>
+                      <TableCell className="text-xs">{fmtDate(r.fecha_pago)}</TableCell>
                       <TableCell className={cn("text-xs text-right font-semibold", vencida ? "text-red-600" : dias !== null && dias <= 3 ? "text-amber-600" : "text-slate-600")}>
                         {dias === null ? "—" : vencida ? `${Math.abs(dias)}d vencida` : `${dias}d`}
                       </TableCell>
@@ -357,16 +366,30 @@ const KPIDashboard = () => {
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <KpiCard
-          icon={Wallet}
-          label="Pendiente de pago"
-          tone="navy"
-          mainValue={fmtCur(pendMXN, "MXN")}
-          subValues={[
-            pendUSD > 0 ? fmtCur(pendUSD, "USD") : null,
-            pendEUR > 0 ? fmtCur(pendEUR, "EUR") : null,
-          ].filter(Boolean) as string[]}
-        />
+        <Card className="rounded-2xl shadow-sm border-slate-200 hover:shadow-md transition-shadow">
+          <CardContent className="p-5">
+            <div className="flex items-start justify-between mb-3">
+              <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Pendiente de pago</span>
+              <div className="h-9 w-9 rounded-xl flex items-center justify-center bg-[#1B2A6B]/10">
+                <Wallet className="h-4 w-4 text-[#1B2A6B]" />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-[10px] font-semibold text-slate-400 tracking-wider">MXN</span>
+                <span className="text-base font-bold font-heading text-slate-900 truncate">{fmtCur(pendMXN, "MXN")}</span>
+              </div>
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-[10px] font-semibold text-slate-400 tracking-wider">USD</span>
+                <span className="text-base font-bold font-heading text-slate-900 truncate">{fmtCur(pendUSD, "USD")}</span>
+              </div>
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-[10px] font-semibold text-slate-400 tracking-wider">EUR</span>
+                <span className="text-base font-bold font-heading text-slate-900 truncate">{fmtCur(pendEUR, "EUR")}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
         <KpiCard
           icon={CheckCircle2}
           label="Pagado este mes"
