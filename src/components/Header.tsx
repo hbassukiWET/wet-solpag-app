@@ -1,6 +1,4 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { LogOut, Shield } from "lucide-react";
+import { Shield } from "lucide-react";
 import type { UserProfile } from "@/types/payment";
 
 interface HeaderProps {
@@ -11,6 +9,8 @@ interface HeaderProps {
 }
 
 const Header = ({ user, onLogout, activeTab, onTabChange }: HeaderProps) => {
+  void user;
+  void onLogout;
   return (
     <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
@@ -57,20 +57,7 @@ const Header = ({ user, onLogout, activeTab, onTabChange }: HeaderProps) => {
           </button>
         </nav>
 
-        <div className="flex items-center gap-3">
-          <div className="hidden sm:flex items-center gap-2">
-            <Avatar className="w-8 h-8">
-              <AvatarImage src={user.picture} />
-              <AvatarFallback className="text-xs bg-secondary text-secondary-foreground">
-                {user.name.slice(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <span className="text-sm text-muted-foreground">{user.email}</span>
-          </div>
-          <Button variant="ghost" size="icon" onClick={onLogout} className="text-muted-foreground hover:text-foreground">
-            <LogOut className="w-4 h-4" />
-          </Button>
-        </div>
+        <div />
       </div>
 
       {/* Mobile tabs */}
