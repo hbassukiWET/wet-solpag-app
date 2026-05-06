@@ -71,12 +71,6 @@ function daysBetween(a: Date, b: Date) {
   return Math.round((b.getTime() - a.getTime()) / 86400000);
 }
 
-function extractProyecto(comentarios: string): string | null {
-  if (!comentarios) return null;
-  const m = comentarios.match(/Proyecto:\s*([^|]+?)(?:\||$)/i);
-  return m ? m[1].trim() : null;
-}
-
 function isPaid(r: DashRecord): boolean {
   return r.pagado === true;
 }
