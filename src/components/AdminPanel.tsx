@@ -174,25 +174,28 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
   }, [records]);
 
   const togglePagado = async (record: SheetRecord, nextPagado: boolean) => {
-    const fecha = nextPagado ? format(new Date(), "dd/MM/yyyy") : "";
-    // Optimistic update
+    if (nextPagado) {
+      // Force user to pick a date via the calendar popover
+      toast.info("Selecciona la fecha de pago real");
+      setOpenCalRow(record.num_sp);
+      return;
+    }
+    // Unchecking: clear date
+    const previo = { pagado: record.pagado, fecha_pago_real: record.fecha_pago_real };
     setRecords((prev) =>
       prev.map((r) =>
-        r.num_sp === record.num_sp ? { ...r, pagado: nextPagado, fecha_pago_real: fecha } : r,
+        r.num_sp === record.num_sp ? { ...r, pagado: false, fecha_pago_real: "" } : r,
       ),
     );
     try {
-      await apiUpdatePagado(record.num_sp, nextPagado, fecha);
-      toast.success(nextPagado ? "Marcado como pagado" : "Marcado como pendiente");
+      await apiUpdatePagado(record.num_sp, false, "");
+      toast.success("Marcado como pendiente");
     } catch (err) {
       console.error("updatePagado error", err);
       toast.error("No se pudo actualizar el estado de pago");
-      // Revert
       setRecords((prev) =>
         prev.map((r) =>
-          r.num_sp === record.num_sp
-            ? { ...r, pagado: record.pagado, fecha_pago_real: record.fecha_pago_real }
-            : r,
+          r.num_sp === record.num_sp ? { ...r, ...previo } : r,
         ),
       );
     }
