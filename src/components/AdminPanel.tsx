@@ -403,8 +403,32 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
                         aria-label="Marcar como pagado"
                       />
                     </TableCell>
-                    <TableCell className="px-5 py-3.5 whitespace-nowrap text-muted-foreground">
-                      {r.fecha_pago_real ? formatDateOnly(r.fecha_pago_real) : "—"}
+                    <TableCell className="px-5 py-3.5 whitespace-nowrap">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={cn(
+                              "h-8 px-2 font-normal gap-1.5",
+                              !r.fecha_pago_real && "text-muted-foreground",
+                            )}
+                          >
+                            <CalendarIcon className="h-3.5 w-3.5" />
+                            {r.fecha_pago_real ? formatDateOnly(r.fecha_pago_real) : "Elegir..."}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={parseRecordDate(r.fecha_pago_real || "") || undefined}
+                            onSelect={(date) => updateFechaPagoReal(r, date)}
+                            initialFocus
+                            className={cn("p-3 pointer-events-auto")}
+                            locale={es}
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </TableCell>
                     <TableCell className="text-center px-5 py-3.5">
                       {r.url_drive ? (
