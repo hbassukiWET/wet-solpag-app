@@ -219,10 +219,12 @@ const KPIDashboard = () => {
       const k = stripAccents(r.transferencia_nombre);
       map[k] = (map[k] || 0) + toMXN(r.monto_total, r.moneda);
     });
-    return Object.entries(map)
+    const arr = Object.entries(map)
       .map(([name, size]) => ({ name, size }))
       .sort((a, b) => b.size - a.size)
       .slice(0, 30);
+    const total = arr.reduce((s, d) => s + d.size, 0);
+    return arr.map(d => ({ ...d, __total: total }));
   }, [filtered, usdRate, eurRate]);
 
   // Section 6: Timeline pendientes
