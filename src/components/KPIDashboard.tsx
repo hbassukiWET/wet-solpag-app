@@ -363,6 +363,57 @@ const KPIDashboard = () => {
         />
       </div>
 
+      {/* SECCIÓN - Timeline pendientes (justo debajo del banner) */}
+      <Card className="rounded-2xl shadow-sm border-slate-200">
+        <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-sm font-semibold text-slate-700">
+            {highlightVencidas ? "Solicitudes vencidas" : "Pagos pendientes — timeline"}
+          </CardTitle>
+          <span className="text-xs text-slate-500">{timeline.length} solicitud{timeline.length !== 1 ? "es" : ""}</span>
+        </CardHeader>
+        <CardContent className="max-h-[28rem] overflow-auto">
+          {timeline.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow className="border-slate-200 hover:bg-transparent">
+                  <TableHead className="text-xs">Num SP</TableHead>
+                  <TableHead className="text-xs">Empresa</TableHead>
+                  <TableHead className="text-xs">Beneficiario</TableHead>
+                  <TableHead className="text-xs text-right">Monto</TableHead>
+                  <TableHead className="text-xs">Moneda</TableHead>
+                  <TableHead className="text-xs">F. tentativa</TableHead>
+                  <TableHead className="text-xs text-right">Días</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {timeline.map((r, i) => {
+                  const fp = parseDate(r.fecha_pago);
+                  const dias = fp ? daysBetween(today, fp) : null;
+                  const vencida = dias !== null && dias < 0;
+                  return (
+                    <TableRow key={r.num_sp + i} className={cn("border-slate-100", i % 2 === 1 && "bg-slate-50/60")}>
+                      <TableCell className="text-xs font-medium">{r.num_sp}</TableCell>
+                      <TableCell className="text-xs">
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold" style={{ backgroundColor: (EMPRESA_COLORS[r.empresa] || "#64748B") + "22", color: EMPRESA_COLORS[r.empresa] || "#475569" }}>
+                          {r.empresa}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-xs max-w-[200px] truncate">{r.transferencia_nombre}</TableCell>
+                      <TableCell className="text-xs text-right font-medium">{fmtCur(r.monto_total, r.moneda)}</TableCell>
+                      <TableCell className="text-xs text-slate-500">{r.moneda}</TableCell>
+                      <TableCell className="text-xs">{r.fecha_pago || "—"}</TableCell>
+                      <TableCell className={cn("text-xs text-right font-semibold", vencida ? "text-red-600" : dias !== null && dias <= 3 ? "text-amber-600" : "text-slate-600")}>
+                        {dias === null ? "—" : vencida ? `${Math.abs(dias)}d vencida` : `${dias}d`}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          ) : <p className="text-slate-400 text-sm text-center py-10">Sin solicitudes pendientes</p>}
+        </CardContent>
+      </Card>
+
       {/* SECCIÓN 3 - Distribución del gasto */}
       <div className="grid md:grid-cols-2 gap-4">
         <Card className="rounded-2xl shadow-sm border-slate-200">
@@ -422,103 +473,6 @@ const KPIDashboard = () => {
       </Card>
 
       {/* SECCIÓN 5 - Proyectos */}
-      <div className="grid md:grid-cols-2 gap-4">
-        <Card className="rounded-2xl shadow-sm border-slate-200">
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold text-slate-700">Top 10 proyectos por monto</CardTitle></CardHeader>
-          <CardContent className="h-80">
-            {proyectosData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={proyectosData} layout="vertical" margin={{ left: 110, right: 16, top: 5, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" horizontal={false} />
-                  <XAxis type="number" tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: "#64748B" }} />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#475569" }} width={100} />
-                  <Tooltip formatter={(v: number) => fmtMXN(v)} />
-                  <Bar dataKey="total" fill="#1B2A6B" radius={[0, 6, 6, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : <p className="text-slate-400 text-sm text-center pt-20">Sin proyectos identificados</p>}
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl shadow-sm border-slate-200">
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold text-slate-700">Detalle por proyecto</CardTitle></CardHeader>
-          <CardContent className="max-h-80 overflow-auto">
-            {proyectosData.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-slate-200">
-                    <TableHead className="text-xs">Proyecto</TableHead>
-                    <TableHead className="text-xs text-center">SPs</TableHead>
-                    <TableHead className="text-xs text-right">Monto MXN eq.</TableHead>
-                    <TableHead className="text-xs text-right">%</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {proyectosData.map((p, i) => (
-                    <TableRow key={p.name} className={cn("border-slate-100", i % 2 === 1 && "bg-slate-50/60")}>
-                      <TableCell className="text-xs font-medium">{p.name}</TableCell>
-                      <TableCell className="text-xs text-center">{p.count}</TableCell>
-                      <TableCell className="text-xs text-right font-medium">{fmtMXN(p.total)}</TableCell>
-                      <TableCell className="text-xs text-right text-slate-500">{p.pct.toFixed(1)}%</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            ) : <p className="text-slate-400 text-sm text-center pt-10">Sin proyectos</p>}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* SECCIÓN 6 - Timeline pendientes */}
-      <Card className="rounded-2xl shadow-sm border-slate-200">
-        <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-sm font-semibold text-slate-700">
-            {highlightVencidas ? "Solicitudes vencidas" : "Pagos pendientes — timeline"}
-          </CardTitle>
-          <span className="text-xs text-slate-500">{timeline.length} solicitud{timeline.length !== 1 ? "es" : ""}</span>
-        </CardHeader>
-        <CardContent className="max-h-[28rem] overflow-auto">
-          {timeline.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow className="border-slate-200 hover:bg-transparent">
-                  <TableHead className="text-xs">Num SP</TableHead>
-                  <TableHead className="text-xs">Empresa</TableHead>
-                  <TableHead className="text-xs">Beneficiario</TableHead>
-                  <TableHead className="text-xs text-right">Monto</TableHead>
-                  <TableHead className="text-xs">Moneda</TableHead>
-                  <TableHead className="text-xs">F. tentativa</TableHead>
-                  <TableHead className="text-xs text-right">Días</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {timeline.map((r, i) => {
-                  const fp = parseDate(r.fecha_pago);
-                  const dias = fp ? daysBetween(today, fp) : null;
-                  const vencida = dias !== null && dias < 0;
-                  return (
-                    <TableRow key={r.num_sp + i} className={cn("border-slate-100", i % 2 === 1 && "bg-slate-50/60")}>
-                      <TableCell className="text-xs font-medium">{r.num_sp}</TableCell>
-                      <TableCell className="text-xs">
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold" style={{ backgroundColor: (EMPRESA_COLORS[r.empresa] || "#64748B") + "22", color: EMPRESA_COLORS[r.empresa] || "#475569" }}>
-                          {r.empresa}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-xs max-w-[200px] truncate">{r.transferencia_nombre}</TableCell>
-                      <TableCell className="text-xs text-right font-medium">{fmtCur(r.monto_total, r.moneda)}</TableCell>
-                      <TableCell className="text-xs text-slate-500">{r.moneda}</TableCell>
-                      <TableCell className="text-xs">{r.fecha_pago || "—"}</TableCell>
-                      <TableCell className={cn("text-xs text-right font-semibold", vencida ? "text-red-600" : dias !== null && dias <= 3 ? "text-amber-600" : "text-slate-600")}>
-                        {dias === null ? "—" : vencida ? `${Math.abs(dias)}d vencida` : `${dias}d`}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          ) : <p className="text-slate-400 text-sm text-center py-10">Sin solicitudes pendientes</p>}
-        </CardContent>
-      </Card>
     </div>
   );
 };
