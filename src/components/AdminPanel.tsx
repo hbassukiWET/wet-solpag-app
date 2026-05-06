@@ -157,6 +157,15 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
     });
   }, [records, filterEmpresa, filterNombre, filterFechaDesde, filterFechaHasta, filterNumSP, filterPagado]);
 
+  const totalsByCurrency = useMemo(() => {
+    const totals: Record<string, number> = { MXN: 0, USD: 0, EUR: 0 };
+    filteredRecords.forEach((r) => {
+      const m = (r.moneda || "MXN").toUpperCase();
+      totals[m] = (totals[m] || 0) + (Number(r.monto_total) || 0);
+    });
+    return totals;
+  }, [filteredRecords]);
+
   const hasActiveFilters = filterEmpresa !== "all" || filterNombre || !!filterFechaDesde || !!filterFechaHasta || filterNumSP || filterPagado !== "all";
 
   const clearFilters = () => {
@@ -495,6 +504,21 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
                   );
                 })}
               </TableBody>
+              <tfoot>
+                <TableRow className="bg-[#1B2A6B] text-white font-bold border-t-2 border-[#1B2A6B]">
+                  <TableCell colSpan={4} className="px-5 py-3.5 text-right text-white">
+                    Totales ({filteredRecords.length} registros):
+                  </TableCell>
+                  <TableCell className="px-5 py-3.5 text-right font-mono whitespace-nowrap text-white">
+                    <div className="flex flex-col gap-0.5 items-end">
+                      <span><span className="text-[10px] opacity-80 mr-2">MXN</span>{formatCurrency(totalsByCurrency.MXN, "MXN")}</span>
+                      <span><span className="text-[10px] opacity-80 mr-2">USD</span>{formatCurrency(totalsByCurrency.USD, "USD")}</span>
+                      <span><span className="text-[10px] opacity-80 mr-2">EUR</span>{formatCurrency(totalsByCurrency.EUR, "EUR")}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell colSpan={6} className="px-5 py-3.5"></TableCell>
+                </TableRow>
+              </tfoot>
             </Table>
           </div>
         )}
