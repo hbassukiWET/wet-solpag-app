@@ -1,23 +1,16 @@
 import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CalendarIcon, RefreshCw, DollarSign, FileText, Clock, TrendingUp, Users, Package, Receipt } from "lucide-react";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { AlertTriangle, RefreshCw, Clock, FileX, Wallet, CheckCircle2, ChevronDown, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fetchRecords } from "@/lib/google-api";
 import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
-import {
-  PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend,
+  PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Treemap, Legend,
 } from "recharts";
 
 interface DashRecord {
@@ -25,39 +18,37 @@ interface DashRecord {
   empresa: string;
   moneda: string;
   monto_total: number;
-  subtotal: number;
-  impuestos: number;
   transferencia_nombre: string;
   orden_compra: string;
   fecha_solicitud: string;
-  fecha_pago: string;
+  fecha_pago: string; // tentativa
+  fecha_pago_real: string;
+  pagado: boolean;
+  comentarios: string;
   solicitante: string;
 }
 
-const COLORS = [
-  "hsl(220, 60%, 25%)", // primary
-  "hsl(38, 92%, 50%)",  // accent
-  "hsl(0, 72%, 51%)",   // destructive
-  "hsl(210, 20%, 60%)", // muted
-  "hsl(150, 50%, 40%)", // green
-  "hsl(280, 50%, 50%)", // purple
-  "hsl(30, 80%, 55%)",  // orange
-  "hsl(190, 60%, 45%)", // teal
-  "hsl(340, 60%, 50%)", // pink
-  "hsl(60, 70%, 45%)",  // yellow-green
-];
-
-const empresaBadgeStyles: Record<string, string> = {
-  WET: "bg-[#CC0000] text-white",
-  WEST: "bg-[#1B2A6B] text-white",
-  VCC: "bg-[#2E75B6] text-white",
-  ALDM: "bg-[#F5C400] text-black",
-  ITR: "bg-[#2E7D32] text-white",
+const EMPRESA_COLORS: Record<string, string> = {
+  WET: "#CC0000",
+  WEST: "#1B2A6B",
+  VCC: "#2E75B6",
+  ALDM: "#F5C400",
+  ITR: "#2E7D32",
 };
+
+const CURRENCY_COLORS: Record<string, string> = {
+  MXN: "#1B2A6B",
+  USD: "#2E7D32",
+  EUR: "#F5C400",
+};
+
+const TREEMAP_COLORS = [
+  "#1B2A6B", "#2E75B6", "#2E7D32", "#F5C400", "#CC0000",
+  "#5B6FA0", "#3D9970", "#B8860B", "#8B0000", "#4682B4",
+];
 
 function parseDate(raw: string): Date | null {
   if (!raw) return null;
-  // dd/MM/yyyy
   const m = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   if (m) return new Date(+m[3], +m[2] - 1, +m[1]);
   const d = new Date(raw);
@@ -68,26 +59,36 @@ function stripAccents(s: string): string {
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
-function fmtCurrency(n: number, moneda = "MXN") {
-  try {
-    return new Intl.NumberFormat("es-MX", { style: "currency", currency: moneda, minimumFractionDigits: 2 }).format(n);
-  } catch { return `$${n.toFixed(2)}`; }
+function fmtMXN(n: number) {
+  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 }).format(n);
+}
+function fmtCur(n: number, c = "MXN") {
+  try { return new Intl.NumberFormat("es-MX", { style: "currency", currency: c, maximumFractionDigits: 2 }).format(n); }
+  catch { return `$${n.toFixed(2)}`; }
 }
 
 function daysBetween(a: Date, b: Date) {
   return Math.round((b.getTime() - a.getTime()) / 86400000);
 }
 
+function extractProyecto(comentarios: string): string | null {
+  if (!comentarios) return null;
+  const m = comentarios.match(/Proyecto:\s*([^|]+?)(?:\||$)/i);
+  return m ? m[1].trim() : null;
+}
+
+function isPaid(r: DashRecord): boolean {
+  return r.pagado === true;
+}
+
 const KPIDashboard = () => {
   const [records, setRecords] = useState<DashRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [usdRate, setUsdRate] = useState(17.5);
+  const [eurRate, setEurRate] = useState(19.5);
   const [filterEmpresa, setFilterEmpresa] = useState("all");
-  const [filterMoneda, setFilterMoneda] = useState("all");
-  const [filterSolicitante, setFilterSolicitante] = useState("all");
-  const [dateFrom, setDateFrom] = useState<Date | undefined>();
-  const [dateTo, setDateTo] = useState<Date | undefined>();
-  const [openFrom, setOpenFrom] = useState(false);
-  const [openTo, setOpenTo] = useState(false);
+  const [paramsOpen, setParamsOpen] = useState(false);
+  const [highlightVencidas, setHighlightVencidas] = useState(false);
 
   const loadRecords = async () => {
     setLoading(true);
@@ -96,14 +97,15 @@ const KPIDashboard = () => {
       const normalized = (Array.isArray(data) ? data : []).map((r: any) => ({
         num_sp: String(r.num_sp ?? ""),
         empresa: String(r.empresa ?? ""),
-        moneda: String(r.moneda ?? "MXN"),
+        moneda: String(r.moneda ?? "MXN").toUpperCase(),
         monto_total: Number(r.monto_total) || 0,
-        subtotal: Number(r.subtotal) || 0,
-        impuestos: Number(r.impuestos) || 0,
         transferencia_nombre: String(r.transferencia_nombre ?? ""),
-        orden_compra: String(r.orden_compra ?? ""),
+        orden_compra: String(r.orden_compra ?? "").trim(),
         fecha_solicitud: String(r.fecha_solicitud ?? ""),
         fecha_pago: String(r.fecha_pago ?? ""),
+        fecha_pago_real: String(r.fecha_pago_real ?? ""),
+        pagado: r.pagado === true || String(r.pagado).toUpperCase() === "TRUE",
+        comentarios: String(r.comentarios ?? ""),
         solicitante: String(r.solicitante ?? ""),
       }));
       setRecords(normalized);
@@ -116,345 +118,470 @@ const KPIDashboard = () => {
 
   useEffect(() => { loadRecords(); }, []);
 
-  const empresas = useMemo(() => [...new Set(records.map(r => r.empresa).filter(Boolean))], [records]);
-  const solicitantes = useMemo(() => [...new Set(records.map(r => r.solicitante).filter(Boolean))], [records]);
+  const toMXN = (amount: number, moneda: string): number => {
+    if (moneda === "USD") return amount * usdRate;
+    if (moneda === "EUR") return amount * eurRate;
+    return amount;
+  };
 
   const filtered = useMemo(() => {
-    return records.filter(r => {
-      if (filterEmpresa !== "all" && r.empresa !== filterEmpresa) return false;
-      if (filterMoneda !== "all" && r.moneda !== filterMoneda) return false;
-      if (filterSolicitante !== "all" && r.solicitante !== filterSolicitante) return false;
-      if (dateFrom || dateTo) {
-        const d = parseDate(r.fecha_solicitud);
-        if (!d) return false;
-        if (dateFrom && d < dateFrom) return false;
-        if (dateTo && d > dateTo) return false;
-      }
-      return true;
+    return records.filter(r => filterEmpresa === "all" || r.empresa === filterEmpresa);
+  }, [records, filterEmpresa]);
+
+  const today = useMemo(() => { const d = new Date(); d.setHours(0,0,0,0); return d; }, []);
+
+  // Vencidas
+  const vencidas = useMemo(() => {
+    return filtered.filter(r => {
+      if (isPaid(r)) return false;
+      const d = parseDate(r.fecha_pago);
+      return d && d < today;
     });
-  }, [records, filterEmpresa, filterMoneda, filterSolicitante, dateFrom, dateTo]);
+  }, [filtered, today]);
 
-  
+  const vencidasMXN = vencidas.filter(r => r.moneda === "MXN").reduce((s, r) => s + r.monto_total, 0);
+  const vencidasUSD = vencidas.filter(r => r.moneda === "USD").reduce((s, r) => s + r.monto_total, 0);
+  const vencidasEUR = vencidas.filter(r => r.moneda === "EUR").reduce((s, r) => s + r.monto_total, 0);
 
-  // SECTION 1 - Volume
-  const totalMXN = useMemo(() => filtered.filter(r => r.moneda === "MXN").reduce((s, r) => s + r.monto_total, 0), [filtered]);
-  const totalUSD = useMemo(() => filtered.filter(r => r.moneda === "USD").reduce((s, r) => s + r.monto_total, 0), [filtered]);
-  const totalRequests = filtered.length;
-  const avgTicket = totalRequests > 0 ? (totalMXN + totalUSD) / totalRequests : 0;
+  // KPI 1: Pendiente de pago por moneda
+  const pendientes = useMemo(() => filtered.filter(r => !isPaid(r)), [filtered]);
+  const pendMXN = pendientes.filter(r => r.moneda === "MXN").reduce((s, r) => s + r.monto_total, 0);
+  const pendUSD = pendientes.filter(r => r.moneda === "USD").reduce((s, r) => s + r.monto_total, 0);
+  const pendEUR = pendientes.filter(r => r.moneda === "EUR").reduce((s, r) => s + r.monto_total, 0);
 
-  const byEmpresa = useMemo(() => {
-    const map: Record<string, number> = {};
-    filtered.forEach(r => { const key = stripAccents(r.empresa); map[key] = (map[key] || 0) + r.monto_total; });
-    return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-  }, [filtered]);
+  // KPI 2: Pagado este mes (en MXN equivalente)
+  const pagadoMes = useMemo(() => {
+    const m = today.getMonth(), y = today.getFullYear();
+    return filtered.filter(r => {
+      if (!isPaid(r)) return false;
+      const d = parseDate(r.fecha_pago_real);
+      return d && d.getMonth() === m && d.getFullYear() === y;
+    }).reduce((s, r) => s + toMXN(r.monto_total, r.moneda), 0);
+  }, [filtered, today, usdRate, eurRate]);
 
-  const byCurrency = useMemo(() => [
-    { name: "MXN", value: totalMXN },
-    { name: "USD", value: totalUSD },
-  ].filter(d => d.value > 0), [totalMXN, totalUSD]);
-
-  // SECTION 2 - Times
-  const avgDaysToPayment = useMemo(() => {
+  // KPI 3: Días promedio al pago
+  const diasPromedio = useMemo(() => {
     let sum = 0, count = 0;
     filtered.forEach(r => {
+      if (!isPaid(r)) return;
       const fs = parseDate(r.fecha_solicitud);
-      const fp = parseDate(r.fecha_pago);
+      const fp = parseDate(r.fecha_pago_real);
       if (fs && fp) { sum += daysBetween(fs, fp); count++; }
     });
     return count > 0 ? Math.round(sum / count) : 0;
   }, [filtered]);
 
+  // KPI 4: Sin OC
+  const sinOC = useMemo(() => filtered.filter(r => {
+    const oc = stripAccents(r.orden_compra).toUpperCase();
+    return !oc || oc === "SN" || oc === "S/N" || oc === "N/A";
+  }).length, [filtered]);
 
-  // SECTION 4 - Providers by currency
-  const currencies = useMemo(() => [...new Set(filtered.map(r => r.moneda).filter(Boolean))].sort(), [filtered]);
-
-  const topProvidersByCurrency = useMemo(() => {
-    const result: Record<string, { providers: { name: string; value: number }[]; top5Pct: number }> = {};
-    currencies.forEach(cur => {
-      const curRecords = filtered.filter(r => r.moneda === cur);
-      const map: Record<string, number> = {};
-      curRecords.forEach(r => {
-        if (r.transferencia_nombre) { const key = stripAccents(r.transferencia_nombre); map[key] = (map[key] || 0) + r.monto_total; }
-      });
-      const sorted = Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-      const total = curRecords.reduce((s, r) => s + r.monto_total, 0);
-      const top5Sum = sorted.slice(0, 5).reduce((s, p) => s + p.value, 0);
-      result[cur] = {
-        providers: sorted.slice(0, 10),
-        top5Pct: total > 0 ? Math.round((top5Sum / total) * 100) : 0,
-      };
-    });
-    return result;
-  }, [filtered, currencies]);
-
-  // SECTION 5 - OC
-  const ocData = useMemo(() => {
-    const map: Record<string, { count: number; total: number }> = {};
+  // Section 3: Donut por Empresa (MXN equiv)
+  const byEmpresa = useMemo(() => {
+    const map: Record<string, number> = {};
     filtered.forEach(r => {
-      if (!r.orden_compra) return;
-      const key = stripAccents(r.orden_compra);
-      if (!map[key]) map[key] = { count: 0, total: 0 };
-      map[key].count++;
-      map[key].total += r.monto_total;
+      const e = r.empresa || "—";
+      map[e] = (map[e] || 0) + toMXN(r.monto_total, r.moneda);
+    });
+    return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  }, [filtered, usdRate, eurRate]);
+
+  // Donut por Moneda (MXN equiv)
+  const byMoneda = useMemo(() => {
+    const map: Record<string, number> = {};
+    filtered.forEach(r => {
+      map[r.moneda] = (map[r.moneda] || 0) + toMXN(r.monto_total, r.moneda);
+    });
+    return Object.entries(map).map(([name, value]) => ({ name, value })).filter(d => d.value > 0).sort((a, b) => b.value - a.value);
+  }, [filtered, usdRate, eurRate]);
+
+  // Section 4: Treemap proveedores
+  const treemapData = useMemo(() => {
+    const map: Record<string, number> = {};
+    filtered.forEach(r => {
+      if (!r.transferencia_nombre) return;
+      const k = stripAccents(r.transferencia_nombre);
+      map[k] = (map[k] || 0) + toMXN(r.monto_total, r.moneda);
     });
     return Object.entries(map)
-      .map(([oc, d]) => ({ oc, ...d }))
-      .sort((a, b) => b.total - a.total);
-  }, [filtered]);
+      .map(([name, size]) => ({ name, size }))
+      .sort((a, b) => b.size - a.size)
+      .slice(0, 30);
+  }, [filtered, usdRate, eurRate]);
 
-  const multiOC = useMemo(() => ocData.filter(d => d.count > 1), [ocData]);
-  const topOC = useMemo(() => ocData.slice(0, 10).map(d => ({ name: d.oc, value: d.total })), [ocData]);
+  // Section 5: Top proyectos
+  const proyectosData = useMemo(() => {
+    const map: Record<string, { count: number; total: number }> = {};
+    filtered.forEach(r => {
+      const proy = extractProyecto(r.comentarios);
+      if (!proy) return;
+      const k = stripAccents(proy);
+      if (!map[k]) map[k] = { count: 0, total: 0 };
+      map[k].count++;
+      map[k].total += toMXN(r.monto_total, r.moneda);
+    });
+    const totalAll = Object.values(map).reduce((s, v) => s + v.total, 0);
+    return Object.entries(map)
+      .map(([name, d]) => ({ name, count: d.count, total: d.total, pct: totalAll > 0 ? (d.total / totalAll) * 100 : 0 }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 10);
+  }, [filtered, usdRate, eurRate]);
 
-  // SECTION 6 - Taxes
-  const totalTax = useMemo(() => filtered.reduce((s, r) => s + r.impuestos, 0), [filtered]);
-  const avgTaxRatio = useMemo(() => {
-    const totalSub = filtered.reduce((s, r) => s + r.subtotal, 0);
-    return totalSub > 0 ? Math.round((totalTax / totalSub) * 100) : 0;
-  }, [filtered, totalTax]);
-
-  const totalBacklog = useMemo(() => filtered.reduce((s, r) => s + r.monto_total, 0), [filtered]);
+  // Section 6: Timeline pendientes
+  const timeline = useMemo(() => {
+    const list = highlightVencidas ? vencidas : pendientes;
+    return [...list].sort((a, b) => {
+      const da = parseDate(a.fecha_pago); const db = parseDate(b.fecha_pago);
+      if (!da && !db) return 0;
+      if (!da) return 1;
+      if (!db) return -1;
+      return da.getTime() - db.getTime();
+    });
+  }, [pendientes, vencidas, highlightVencidas]);
 
   if (loading) {
     return (
       <div className="space-y-6 max-w-7xl mx-auto">
+        <Skeleton className="h-20 rounded-2xl" />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32 rounded-2xl" />)}
         </div>
         <div className="grid md:grid-cols-2 gap-4">
-          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-64 rounded-xl" />)}
+          {[...Array(2)].map((_, i) => <Skeleton key={i} className="h-72 rounded-2xl" />)}
         </div>
+        <Skeleton className="h-80 rounded-2xl" />
       </div>
     );
   }
 
+  const empresasList = [...new Set(records.map(r => r.empresa).filter(Boolean))].sort();
+
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Filters */}
-      <Card>
-        <CardContent className="pt-4 pb-4">
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Empresa</label>
+    <div className="space-y-6 max-w-7xl mx-auto bg-[#F4F5F7] -mx-4 px-4 py-4 rounded-lg">
+      {/* Parámetros globales */}
+      <Card className="rounded-2xl shadow-sm border-slate-200">
+        <Collapsible open={paramsOpen} onOpenChange={setParamsOpen}>
+          <div className="flex items-center justify-between p-4">
+            <CollapsibleTrigger asChild>
+              <button className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900">
+                <Settings2 className="h-4 w-4" />
+                Parámetros del dashboard
+                <ChevronDown className={cn("h-4 w-4 transition-transform", paramsOpen && "rotate-180")} />
+              </button>
+            </CollapsibleTrigger>
+            <div className="flex items-center gap-3">
               <Select value={filterEmpresa} onValueChange={setFilterEmpresa}>
-                <SelectTrigger className="w-[140px] h-9"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="w-[160px] h-9 rounded-lg"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  {empresas.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+                  <SelectItem value="all">Todas las empresas</SelectItem>
+                  {empresasList.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
                 </SelectContent>
               </Select>
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={loadRecords}>
+                <RefreshCw className="h-4 w-4" />
+              </Button>
             </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Moneda</label>
-              <Select value={filterMoneda} onValueChange={setFilterMoneda}>
-                <SelectTrigger className="w-[120px] h-9"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  <SelectItem value="MXN">MXN</SelectItem>
-                  <SelectItem value="USD">USD</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Solicitante</label>
-              <Select value={filterSolicitante} onValueChange={setFilterSolicitante}>
-                <SelectTrigger className="w-[180px] h-9"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  {solicitantes.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Desde</label>
-              <Popover open={openFrom} onOpenChange={setOpenFrom}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn("w-[140px] h-9 justify-start text-left text-sm", !dateFrom && "text-muted-foreground")}>
-                    <CalendarIcon className="mr-1 h-3.5 w-3.5" />
-                    {dateFrom ? format(dateFrom, "dd/MM/yy", { locale: es }) : "Inicio"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={dateFrom} onSelect={(d) => { setDateFrom(d); setOpenFrom(false); }} locale={es} className="pointer-events-auto" />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Hasta</label>
-              <Popover open={openTo} onOpenChange={setOpenTo}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn("w-[140px] h-9 justify-start text-left text-sm", !dateTo && "text-muted-foreground")}>
-                    <CalendarIcon className="mr-1 h-3.5 w-3.5" />
-                    {dateTo ? format(dateTo, "dd/MM/yy", { locale: es }) : "Fin"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={dateTo} onSelect={(d) => { setDateTo(d); setOpenTo(false); }} locale={es} className="pointer-events-auto" />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <Button variant="ghost" size="sm" className="h-9" onClick={() => { setFilterEmpresa("all"); setFilterMoneda("all"); setFilterSolicitante("all"); setDateFrom(undefined); setDateTo(undefined); }}>
-              Limpiar
-            </Button>
-            <Button variant="ghost" size="icon" className="h-9 w-9 ml-auto" onClick={loadRecords}>
-              <RefreshCw className="h-4 w-4" />
-            </Button>
           </div>
-        </CardContent>
+          <CollapsibleContent>
+            <div className="px-4 pb-4 grid grid-cols-2 gap-4 max-w-md">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-500">USD → MXN</label>
+                <Input type="number" step="0.01" value={usdRate} onChange={e => setUsdRate(Number(e.target.value) || 0)} className="h-9 rounded-lg" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-500">EUR → MXN</label>
+                <Input type="number" step="0.01" value={eurRate} onChange={e => setEurRate(Number(e.target.value) || 0)} className="h-9 rounded-lg" />
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </Card>
 
-      {/* KPI Cards Row 1 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <KPICard icon={DollarSign} label="Total MXN" value={fmtCurrency(totalMXN, "MXN")} />
-        <KPICard icon={DollarSign} label="Total USD" value={fmtCurrency(totalUSD, "USD")} />
-        <KPICard icon={FileText} label="Solicitudes" value={String(totalRequests)} />
-        <KPICard icon={TrendingUp} label="Ticket Promedio" value={fmtCurrency(avgTicket, "MXN")} />
+      {/* SECCIÓN 1 - Banner vencidas */}
+      {vencidas.length > 0 && (
+        <Card className="rounded-2xl shadow-sm border-0 bg-gradient-to-r from-red-600 to-red-700 text-white">
+          <CardContent className="p-5 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
+                <AlertTriangle className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-sm opacity-90 font-medium">Solicitudes vencidas</p>
+                <p className="text-2xl font-bold font-heading">{vencidas.length} SP{vencidas.length !== 1 ? "s" : ""} sin pagar</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-6">
+              <div className="text-right">
+                <p className="text-xs opacity-80">Monto vencido</p>
+                <div className="flex flex-wrap gap-3 justify-end">
+                  {vencidasMXN > 0 && <span className="font-bold">{fmtCur(vencidasMXN, "MXN")}</span>}
+                  {vencidasUSD > 0 && <span className="font-bold">{fmtCur(vencidasUSD, "USD")}</span>}
+                  {vencidasEUR > 0 && <span className="font-bold">{fmtCur(vencidasEUR, "EUR")}</span>}
+                </div>
+              </div>
+              <Button variant="secondary" size="sm" onClick={() => setHighlightVencidas(v => !v)} className="rounded-lg bg-white text-red-700 hover:bg-white/90">
+                {highlightVencidas ? "Ver todas pendientes" : "Ver vencidas"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* SECCIÓN 2 - KPIs principales */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <KpiCard
+          icon={Wallet}
+          label="Pendiente de pago"
+          tone="navy"
+          mainValue={fmtCur(pendMXN, "MXN")}
+          subValues={[
+            pendUSD > 0 ? fmtCur(pendUSD, "USD") : null,
+            pendEUR > 0 ? fmtCur(pendEUR, "EUR") : null,
+          ].filter(Boolean) as string[]}
+        />
+        <KpiCard
+          icon={CheckCircle2}
+          label="Pagado este mes"
+          tone="green"
+          mainValue={fmtMXN(pagadoMes)}
+          subValues={["MXN equivalente"]}
+        />
+        <KpiCard
+          icon={Clock}
+          label="Días promedio al pago"
+          tone="navy"
+          mainValue={`${diasPromedio}`}
+          subValues={["días desde solicitud"]}
+        />
+        <KpiCard
+          icon={FileX}
+          label="SPs sin OC"
+          tone={sinOC > 15 ? "red" : sinOC > 5 ? "amber" : "navy"}
+          mainValue={`${sinOC}`}
+          subValues={["solicitudes"]}
+        />
       </div>
 
-      {/* KPI Cards Row 2 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <KPICard icon={Clock} label="Días Prom. al Pago" value={`${avgDaysToPayment} días`} />
-        <KPICard icon={Package} label="Backlog Abierto" value={String(totalRequests)} />
-        <KPICard icon={DollarSign} label="Monto Backlog" value={fmtCurrency(totalBacklog, "MXN")} />
-        <KPICard icon={Receipt} label="Impuestos Acumulados" value={fmtCurrency(totalTax, "MXN")} />
-      </div>
-
-      {/* KPI Cards Row 3 */}
-      <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
-        <KPICard icon={Receipt} label="Ratio Impuestos/Subtotal" value={`${avgTaxRatio}%`} />
-      </div>
-
-      {/* Charts Row 1 */}
+      {/* SECCIÓN 3 - Distribución del gasto */}
       <div className="grid md:grid-cols-2 gap-4">
-        {/* By Empresa */}
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Desglose por Empresa</CardTitle></CardHeader>
-          <CardContent className="h-64">
+        <Card className="rounded-2xl shadow-sm border-slate-200">
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold text-slate-700">Gasto por empresa (MXN eq.)</CardTitle></CardHeader>
+          <CardContent className="h-72">
             {byEmpresa.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={byEmpresa} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                    {byEmpresa.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  <Pie data={byEmpresa} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={95} paddingAngle={2} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                    {byEmpresa.map((d, i) => <Cell key={i} fill={EMPRESA_COLORS[d.name] || TREEMAP_COLORS[i % TREEMAP_COLORS.length]} />)}
                   </Pie>
-                  <Tooltip formatter={(v: number) => fmtCurrency(v, "MXN")} />
+                  <Tooltip formatter={(v: number) => fmtMXN(v)} />
                 </PieChart>
               </ResponsiveContainer>
-            ) : <p className="text-muted-foreground text-sm text-center pt-20">Sin datos</p>}
+            ) : <p className="text-slate-400 text-sm text-center pt-20">Sin datos</p>}
           </CardContent>
         </Card>
 
-        {/* MXN vs USD */}
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Split MXN vs USD</CardTitle></CardHeader>
-          <CardContent className="h-64">
-            {byCurrency.length > 0 ? (
+        <Card className="rounded-2xl shadow-sm border-slate-200">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold text-slate-700">Gasto por moneda (MXN eq.)</CardTitle>
+          </CardHeader>
+          <CardContent className="h-72">
+            {byMoneda.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={byCurrency} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={80} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                    <Cell fill="hsl(150, 50%, 30%)" />
-                    <Cell fill="hsl(150, 50%, 55%)" />
+                  <Pie data={byMoneda} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={95} paddingAngle={2} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                    {byMoneda.map((d, i) => <Cell key={i} fill={CURRENCY_COLORS[d.name] || TREEMAP_COLORS[i]} />)}
                   </Pie>
-                  <Tooltip formatter={(v: number) => fmtCurrency(v, "MXN")} />
+                  <Tooltip formatter={(v: number) => fmtMXN(v)} />
                 </PieChart>
               </ResponsiveContainer>
-            ) : <p className="text-muted-foreground text-sm text-center pt-20">Sin datos</p>}
+            ) : <p className="text-slate-400 text-sm text-center pt-20">Sin datos</p>}
           </CardContent>
         </Card>
       </div>
 
-      {/* Charts - Providers by Currency */}
-      {currencies.map(cur => {
-        const data = topProvidersByCurrency[cur];
-        if (!data || data.providers.length === 0) return null;
-        return (
-          <Card key={cur}>
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium">Top 10 Proveedores — {cur}</CardTitle>
-                <span className="text-xs text-muted-foreground">Top 5 = {data.top5Pct}% del total</span>
-              </div>
-            </CardHeader>
-            <CardContent className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.providers} layout="vertical" margin={{ left: 120, right: 20, top: 5, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(214, 20%, 88%)" />
-                  <XAxis type="number" tickFormatter={(v) => fmtCurrency(v, cur)} tick={{ fontSize: 11 }} />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={110} />
-                  <Tooltip formatter={(v: number) => fmtCurrency(v, cur)} />
-                  <Bar dataKey="value" fill={cur === "MXN" ? "hsl(220, 60%, 25%)" : cur === "USD" ? "hsl(150, 50%, 40%)" : "hsl(38, 92%, 50%)"} radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        );
-      })}
+      {/* SECCIÓN 4 - Treemap proveedores */}
+      <Card className="rounded-2xl shadow-sm border-slate-200">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold text-slate-700">Distribución por proveedor (MXN eq.)</CardTitle>
+        </CardHeader>
+        <CardContent className="h-96">
+          {treemapData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <Treemap
+                data={treemapData}
+                dataKey="size"
+                stroke="#fff"
+                content={<TreemapNode />}
+              >
+                <Tooltip formatter={(v: number) => fmtMXN(v)} />
+              </Treemap>
+            </ResponsiveContainer>
+          ) : <p className="text-slate-400 text-sm text-center pt-20">Sin datos</p>}
+        </CardContent>
+      </Card>
 
-      {/* Charts Row 3 - OC */}
+      {/* SECCIÓN 5 - Proyectos */}
       <div className="grid md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Top 10 Órdenes de Compra</CardTitle></CardHeader>
-          <CardContent className="h-72">
-            {topOC.length > 0 ? (
+        <Card className="rounded-2xl shadow-sm border-slate-200">
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold text-slate-700">Top 10 proyectos por monto</CardTitle></CardHeader>
+          <CardContent className="h-80">
+            {proyectosData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={topOC} margin={{ left: 10, right: 10, top: 5, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(214, 20%, 88%)" />
-                  <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                  <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(v: number) => fmtCurrency(v, "MXN")} />
-                  <Bar dataKey="value" fill="hsl(38, 92%, 50%)" radius={[4, 4, 0, 0]} />
+                <BarChart data={proyectosData} layout="vertical" margin={{ left: 110, right: 16, top: 5, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" horizontal={false} />
+                  <XAxis type="number" tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: "#64748B" }} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#475569" }} width={100} />
+                  <Tooltip formatter={(v: number) => fmtMXN(v)} />
+                  <Bar dataKey="total" fill="#1B2A6B" radius={[0, 6, 6, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-            ) : <p className="text-muted-foreground text-sm text-center pt-20">Sin datos</p>}
+            ) : <p className="text-slate-400 text-sm text-center pt-20">Sin proyectos identificados</p>}
           </CardContent>
         </Card>
 
-        {/* OC with multiple requests */}
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">OCs con Múltiples Solicitudes</CardTitle></CardHeader>
-          <CardContent className="max-h-72 overflow-auto">
-            {multiOC.length > 0 ? (
+        <Card className="rounded-2xl shadow-sm border-slate-200">
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold text-slate-700">Detalle por proyecto</CardTitle></CardHeader>
+          <CardContent className="max-h-80 overflow-auto">
+            {proyectosData.length > 0 ? (
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs">Orden de Compra</TableHead>
-                    <TableHead className="text-xs text-center">Solicitudes</TableHead>
-                    <TableHead className="text-xs text-right">Monto Total</TableHead>
+                  <TableRow className="border-slate-200">
+                    <TableHead className="text-xs">Proyecto</TableHead>
+                    <TableHead className="text-xs text-center">SPs</TableHead>
+                    <TableHead className="text-xs text-right">Monto MXN eq.</TableHead>
+                    <TableHead className="text-xs text-right">%</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {multiOC.map(d => (
-                    <TableRow key={d.oc}>
-                      <TableCell className="text-xs font-medium">{d.oc}</TableCell>
-                      <TableCell className="text-xs text-center">{d.count}</TableCell>
-                      <TableCell className="text-xs text-right">{fmtCurrency(d.total, "MXN")}</TableCell>
+                  {proyectosData.map((p, i) => (
+                    <TableRow key={p.name} className={cn("border-slate-100", i % 2 === 1 && "bg-slate-50/60")}>
+                      <TableCell className="text-xs font-medium">{p.name}</TableCell>
+                      <TableCell className="text-xs text-center">{p.count}</TableCell>
+                      <TableCell className="text-xs text-right font-medium">{fmtMXN(p.total)}</TableCell>
+                      <TableCell className="text-xs text-right text-slate-500">{p.pct.toFixed(1)}%</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
-            ) : <p className="text-muted-foreground text-sm text-center pt-10">Todas las OC tienen una sola solicitud</p>}
+            ) : <p className="text-slate-400 text-sm text-center pt-10">Sin proyectos</p>}
           </CardContent>
         </Card>
       </div>
+
+      {/* SECCIÓN 6 - Timeline pendientes */}
+      <Card className="rounded-2xl shadow-sm border-slate-200">
+        <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-sm font-semibold text-slate-700">
+            {highlightVencidas ? "Solicitudes vencidas" : "Pagos pendientes — timeline"}
+          </CardTitle>
+          <span className="text-xs text-slate-500">{timeline.length} solicitud{timeline.length !== 1 ? "es" : ""}</span>
+        </CardHeader>
+        <CardContent className="max-h-[28rem] overflow-auto">
+          {timeline.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow className="border-slate-200 hover:bg-transparent">
+                  <TableHead className="text-xs">Num SP</TableHead>
+                  <TableHead className="text-xs">Empresa</TableHead>
+                  <TableHead className="text-xs">Beneficiario</TableHead>
+                  <TableHead className="text-xs text-right">Monto</TableHead>
+                  <TableHead className="text-xs">Moneda</TableHead>
+                  <TableHead className="text-xs">F. tentativa</TableHead>
+                  <TableHead className="text-xs text-right">Días</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {timeline.map((r, i) => {
+                  const fp = parseDate(r.fecha_pago);
+                  const dias = fp ? daysBetween(today, fp) : null;
+                  const vencida = dias !== null && dias < 0;
+                  return (
+                    <TableRow key={r.num_sp + i} className={cn("border-slate-100", i % 2 === 1 && "bg-slate-50/60")}>
+                      <TableCell className="text-xs font-medium">{r.num_sp}</TableCell>
+                      <TableCell className="text-xs">
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold" style={{ backgroundColor: (EMPRESA_COLORS[r.empresa] || "#64748B") + "22", color: EMPRESA_COLORS[r.empresa] || "#475569" }}>
+                          {r.empresa}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-xs max-w-[200px] truncate">{r.transferencia_nombre}</TableCell>
+                      <TableCell className="text-xs text-right font-medium">{fmtCur(r.monto_total, r.moneda)}</TableCell>
+                      <TableCell className="text-xs text-slate-500">{r.moneda}</TableCell>
+                      <TableCell className="text-xs">{r.fecha_pago || "—"}</TableCell>
+                      <TableCell className={cn("text-xs text-right font-semibold", vencida ? "text-red-600" : dias !== null && dias <= 3 ? "text-amber-600" : "text-slate-600")}>
+                        {dias === null ? "—" : vencida ? `${Math.abs(dias)}d vencida` : `${dias}d`}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          ) : <p className="text-slate-400 text-sm text-center py-10">Sin solicitudes pendientes</p>}
+        </CardContent>
+      </Card>
     </div>
   );
 };
 
-interface KPICardProps {
+interface KpiCardProps {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
-  value: string;
-  variant?: "default" | "destructive";
+  mainValue: string;
+  subValues?: string[];
+  tone?: "navy" | "green" | "amber" | "red";
 }
 
-const KPICard = ({ icon: Icon, label, value, variant = "default" }: KPICardProps) => (
-  <Card className={cn(variant === "destructive" && "border-destructive/50 bg-destructive/5")}>
-    <CardContent className="pt-4 pb-4 px-4">
-      <div className="flex items-center gap-2 mb-1">
-        <Icon className={cn("h-4 w-4", variant === "destructive" ? "text-destructive" : "text-muted-foreground")} />
-        <span className="text-xs text-muted-foreground truncate">{label}</span>
-      </div>
-      <p className={cn("text-lg font-bold font-heading truncate", variant === "destructive" && "text-destructive")}>{value}</p>
-    </CardContent>
-  </Card>
-);
+const TONE_STYLES: Record<string, { bg: string; icon: string; value: string }> = {
+  navy:  { bg: "bg-[#1B2A6B]/10", icon: "text-[#1B2A6B]", value: "text-slate-900" },
+  green: { bg: "bg-emerald-100",  icon: "text-emerald-700", value: "text-slate-900" },
+  amber: { bg: "bg-amber-100",    icon: "text-amber-700",   value: "text-amber-700" },
+  red:   { bg: "bg-red-100",      icon: "text-red-600",     value: "text-red-600" },
+};
+
+const KpiCard = ({ icon: Icon, label, mainValue, subValues = [], tone = "navy" }: KpiCardProps) => {
+  const t = TONE_STYLES[tone];
+  return (
+    <Card className="rounded-2xl shadow-sm border-slate-200 hover:shadow-md transition-shadow">
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between mb-3">
+          <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">{label}</span>
+          <div className={cn("h-9 w-9 rounded-xl flex items-center justify-center", t.bg)}>
+            <Icon className={cn("h-4 w-4", t.icon)} />
+          </div>
+        </div>
+        <p className={cn("text-2xl font-bold font-heading leading-tight", t.value)}>{mainValue}</p>
+        {subValues.length > 0 && (
+          <div className="mt-1 space-y-0.5">
+            {subValues.map((v, i) => <p key={i} className="text-xs text-slate-500 font-medium">{v}</p>)}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+// Treemap custom node
+const TreemapNode = (props: any) => {
+  const { x, y, width, height, name, size, index } = props;
+  const fill = TREEMAP_COLORS[index % TREEMAP_COLORS.length];
+  const showLabel = width > 70 && height > 36;
+  return (
+    <g>
+      <rect x={x} y={y} width={width} height={height} style={{ fill, stroke: "#fff", strokeWidth: 2 }} />
+      {showLabel && (
+        <>
+          <text x={x + 8} y={y + 18} fill="#fff" fontSize={11} fontWeight={600} style={{ pointerEvents: "none" }}>
+            {String(name).length > Math.floor(width / 7) ? String(name).slice(0, Math.floor(width / 7) - 1) + "…" : name}
+          </text>
+          {height > 50 && (
+            <text x={x + 8} y={y + 34} fill="#fff" fontSize={10} opacity={0.85} style={{ pointerEvents: "none" }}>
+              ${(size / 1000).toFixed(0)}k
+            </text>
+          )}
+        </>
+      )}
+    </g>
+  );
+};
 
 export default KPIDashboard;
