@@ -204,24 +204,6 @@ const KPIDashboard = () => {
       .slice(0, 30);
   }, [filtered, usdRate, eurRate]);
 
-  // Section 5: Top proyectos
-  const proyectosData = useMemo(() => {
-    const map: Record<string, { count: number; total: number }> = {};
-    filtered.forEach(r => {
-      const proy = extractProyecto(r.comentarios);
-      if (!proy) return;
-      const k = stripAccents(proy);
-      if (!map[k]) map[k] = { count: 0, total: 0 };
-      map[k].count++;
-      map[k].total += toMXN(r.monto_total, r.moneda);
-    });
-    const totalAll = Object.values(map).reduce((s, v) => s + v.total, 0);
-    return Object.entries(map)
-      .map(([name, d]) => ({ name, count: d.count, total: d.total, pct: totalAll > 0 ? (d.total / totalAll) * 100 : 0 }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 10);
-  }, [filtered, usdRate, eurRate]);
-
   // Section 6: Timeline pendientes
   const timeline = useMemo(() => {
     const list = highlightVencidas ? vencidas : pendientes;
