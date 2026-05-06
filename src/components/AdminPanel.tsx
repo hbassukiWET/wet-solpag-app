@@ -12,6 +12,9 @@ import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { fetchRecords } from "@/lib/google-api";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
+import { updatePagado as apiUpdatePagado } from "@/lib/google-api";
+import { toast } from "sonner";
 
 export interface SheetRecord {
   num_sp: string;
@@ -29,6 +32,8 @@ export interface SheetRecord {
   impuestos?: number;
   comentarios?: string;
   solicitante?: string;
+  pagado?: boolean;
+  fecha_pago_real?: string;
 }
 
 interface AdminPanelProps {
@@ -87,6 +92,8 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
         marca_temporal: String(r.marca_temporal ?? ''),
         transferencia_nombre: r.transferencia_nombre ? String(r.transferencia_nombre) : undefined,
         fecha_pago: r.fecha_pago ? String(r.fecha_pago) : undefined,
+        pagado: r.pagado === true || String(r.pagado).toLowerCase() === 'true',
+        fecha_pago_real: r.fecha_pago_real ? String(r.fecha_pago_real) : '',
       }));
       setRecords(normalized);
     } catch (err) {
@@ -154,6 +161,31 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
     const set = new Set(records.map((r) => r.empresa));
     return Array.from(set).sort();
   }, [records]);
+
+  const togglePagado = async (record: SheetRecord, nextPagado: boolean) => {
+    const fecha = nextPagado ? format(new Date(), "dd/MM/yyyy") : "";
+    // Optimistic update
+    setRecords((prev) =>
+      prev.map((r) =>
+        r.num_sp === record.num_sp ? { ...r, pagado: nextPagado, fecha_pago_real: fecha } : r,
+      ),
+    );
+    try {
+      await apiUpdatePagado(record.num_sp, nextPagado, fecha);
+      toast.success(nextPagado ? "Marcado como pagado" : "Marcado como pendiente");
+    } catch (err) {
+      console.error("updatePagado error", err);
+      toast.error("No se pudo actualizar el estado de pago");
+      // Revert
+      setRecords((prev) =>
+        prev.map((r) =>
+          r.num_sp === record.num_sp
+            ? { ...r, pagado: record.pagado, fecha_pago_real: record.fecha_pago_real }
+            : r,
+        ),
+      );
+    }
+  };
 
   return (
     <Card className="glass-card overflow-hidden">
@@ -296,6 +328,8 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
                   <TableHead className="text-right whitespace-nowrap bg-[#1B2A6B] text-white font-bold px-5 py-3.5">Monto Total</TableHead>
                   <TableHead className="bg-[#1B2A6B] text-white font-bold px-5 py-3.5">Moneda</TableHead>
                   <TableHead className="whitespace-nowrap bg-[#1B2A6B] text-white font-bold px-5 py-3.5">Fecha Pago Tentativa</TableHead>
+                  <TableHead className="text-center bg-[#1B2A6B] text-white font-bold px-5 py-3.5">Pagado</TableHead>
+                  <TableHead className="whitespace-nowrap bg-[#1B2A6B] text-white font-bold px-5 py-3.5">Fecha Pago Real</TableHead>
                   <TableHead className="text-center bg-[#1B2A6B] text-white font-bold px-5 py-3.5">PDF</TableHead>
                   <TableHead className="text-center bg-[#1B2A6B] text-white font-bold px-5 py-3.5 last:rounded-tr-none">Acciones</TableHead>
                 </TableRow>
@@ -305,7 +339,11 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
                   <TableRow
                     key={i}
                     className={`border-b border-border/40 transition-colors ${
-                      i % 2 === 1 ? "bg-[#F5F5F5] dark:bg-muted/30" : "bg-white dark:bg-background"
+                      r.pagado
+                        ? "bg-emerald-100 dark:bg-emerald-950/40 hover:bg-emerald-200/70 dark:hover:bg-emerald-900/50"
+                        : i % 2 === 1
+                        ? "bg-[#F5F5F5] dark:bg-muted/30"
+                        : "bg-white dark:bg-background"
                     }`}
                   >
                     <TableCell className="font-mono font-bold px-5 py-3.5 whitespace-nowrap">{r.num_sp}</TableCell>
@@ -334,6 +372,16 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
                     </TableCell>
                     <TableCell className="px-5 py-3.5 whitespace-nowrap text-muted-foreground">
                       {formatDateOnly(r.fecha_pago || r.marca_temporal)}
+                    </TableCell>
+                    <TableCell className="text-center px-5 py-3.5">
+                      <Checkbox
+                        checked={!!r.pagado}
+                        onCheckedChange={(v) => togglePagado(r, v === true)}
+                        aria-label="Marcar como pagado"
+                      />
+                    </TableCell>
+                    <TableCell className="px-5 py-3.5 whitespace-nowrap text-muted-foreground">
+                      {r.fecha_pago_real ? formatDateOnly(r.fecha_pago_real) : "—"}
                     </TableCell>
                     <TableCell className="text-center px-5 py-3.5">
                       {r.url_drive ? (
