@@ -505,7 +505,7 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
                 })}
               </TableBody>
               <tfoot>
-                <TableRow className="bg-[#1B2A6B] text-white font-bold border-t-2 border-[#1B2A6B]">
+                <TableRow className="bg-[#1B2A6B] hover:bg-[#1B2A6B] text-white font-bold border-t-2 border-[#1B2A6B]">
                   <TableCell colSpan={4} className="px-5 py-3.5 text-right text-white">
                     Totales ({filteredRecords.length} registros):
                   </TableCell>
