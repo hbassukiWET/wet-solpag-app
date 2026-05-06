@@ -74,6 +74,8 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
   const [filterFechaDesde, setFilterFechaDesde] = useState<Date | undefined>(undefined);
   const [filterFechaHasta, setFilterFechaHasta] = useState<Date | undefined>(undefined);
   const [filterNumSP, setFilterNumSP] = useState("");
+  const [filterPagado, setFilterPagado] = useState<string>("all");
+  const [openCalRow, setOpenCalRow] = useState<string | null>(null);
 
   const loadRecords = async () => {
     setLoading(true);
@@ -143,11 +145,19 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
         if (filterFechaHasta && recDay > filterFechaHasta) return false;
       }
       if (filterNumSP && !r.num_sp.toLowerCase().includes(filterNumSP.toLowerCase())) return false;
+      if (filterPagado === "pagado" && !r.pagado) return false;
+      if (filterPagado === "pendiente" && r.pagado) return false;
+      if (filterPagado === "vencido") {
+        const fp = parseRecordDate(r.fecha_pago || "");
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (r.pagado || !fp || fp >= today) return false;
+      }
       return true;
     });
-  }, [records, filterEmpresa, filterNombre, filterFechaDesde, filterFechaHasta, filterNumSP]);
+  }, [records, filterEmpresa, filterNombre, filterFechaDesde, filterFechaHasta, filterNumSP, filterPagado]);
 
-  const hasActiveFilters = filterEmpresa !== "all" || filterNombre || !!filterFechaDesde || !!filterFechaHasta || filterNumSP;
+  const hasActiveFilters = filterEmpresa !== "all" || filterNombre || !!filterFechaDesde || !!filterFechaHasta || filterNumSP || filterPagado !== "all";
 
   const clearFilters = () => {
     setFilterEmpresa("all");
@@ -155,6 +165,7 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
     setFilterFechaDesde(undefined);
     setFilterFechaHasta(undefined);
     setFilterNumSP("");
+    setFilterPagado("all");
   };
 
   const empresas = useMemo(() => {
@@ -191,6 +202,7 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
     if (!date) return;
     const fecha = format(date, "dd/MM/yyyy");
     const previo = record.fecha_pago_real;
+    setOpenCalRow(null);
     setRecords((prev) =>
       prev.map((r) =>
         r.num_sp === record.num_sp ? { ...r, pagado: true, fecha_pago_real: fecha } : r,
@@ -317,6 +329,20 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
               </PopoverContent>
             </Popover>
           </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-muted-foreground">Estado</label>
+            <Select value={filterPagado} onValueChange={setFilterPagado}>
+              <SelectTrigger className="h-9 w-36">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="pagado">Pagado</SelectItem>
+                <SelectItem value="pendiente">Pendiente</SelectItem>
+                <SelectItem value="vencido">Vencido</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           {hasActiveFilters && (
             <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 gap-1 text-muted-foreground">
               <X className="w-3.5 h-3.5" />
@@ -358,12 +384,19 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredRecords.map((r, i) => (
+                {filteredRecords.map((r, i) => {
+                  const fp = parseRecordDate(r.fecha_pago || "");
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const vencido = !r.pagado && fp && fp < today;
+                  return (
                   <TableRow
                     key={i}
                     className={`border-b border-border/40 transition-colors ${
                       r.pagado
                         ? "bg-emerald-100 dark:bg-emerald-950/40 hover:bg-emerald-200/70 dark:hover:bg-emerald-900/50"
+                        : vencido
+                        ? "bg-red-100 dark:bg-red-950/40 hover:bg-red-200/70 dark:hover:bg-red-900/50"
                         : i % 2 === 1
                         ? "bg-[#F5F5F5] dark:bg-muted/30"
                         : "bg-white dark:bg-background"
@@ -393,8 +426,9 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
                         {r.moneda}
                       </span>
                     </TableCell>
-                    <TableCell className="px-5 py-3.5 whitespace-nowrap text-muted-foreground">
+                    <TableCell className={cn("px-5 py-3.5 whitespace-nowrap", vencido ? "text-red-700 dark:text-red-300 font-semibold" : "text-muted-foreground")}>
                       {formatDateOnly(r.fecha_pago || r.marca_temporal)}
+                      {vencido && <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-red-600 text-white">VENCIDO</span>}
                     </TableCell>
                     <TableCell className="text-center px-5 py-3.5">
                       <Checkbox
@@ -404,7 +438,7 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
                       />
                     </TableCell>
                     <TableCell className="px-5 py-3.5 whitespace-nowrap">
-                      <Popover>
+                      <Popover open={openCalRow === r.num_sp} onOpenChange={(o) => setOpenCalRow(o ? r.num_sp : null)}>
                         <PopoverTrigger asChild>
                           <Button
                             variant="ghost"
@@ -455,7 +489,8 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
                       )}
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
