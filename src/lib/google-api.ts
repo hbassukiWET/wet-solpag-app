@@ -29,6 +29,12 @@ async function callAppsScript<T = unknown>(payload: Record<string, unknown>): Pr
   try {
     data = JSON.parse(text);
   } catch {
+    const isHtml = text.trim().toLowerCase().startsWith('<!doctype') || text.trim().toLowerCase().startsWith('<html');
+    if (isHtml) {
+      throw new Error(
+        'El Apps Script no respondió JSON (devolvió una página HTML de Google). Esto pasa cuando el deployment está configurado como "Execute as: Me" + "Who has access: Only myself". Editá el deployment y poné "Who has access: Anyone".',
+      );
+    }
     throw new Error(`Apps Script returned invalid JSON: ${text.slice(0, 200)}`);
   }
 
