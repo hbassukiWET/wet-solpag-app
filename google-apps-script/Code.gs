@@ -23,6 +23,8 @@ function doPost(e) {
         return jsonResponse(getRecords());
       case 'uploadPDF':
         return jsonResponse(uploadPDF(body));
+      case 'updatePagado':
+        return jsonResponse(updatePagado(body));
       default:
         return jsonResponse({ error: 'Acción no reconocida' }, 400);
     }
