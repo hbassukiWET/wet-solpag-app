@@ -329,6 +329,20 @@ const AdminPanel = ({ onEditRecord }: AdminPanelProps) => {
               </PopoverContent>
             </Popover>
           </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-muted-foreground">Estado</label>
+            <Select value={filterPagado} onValueChange={setFilterPagado}>
+              <SelectTrigger className="h-9 w-36">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="pagado">Pagado</SelectItem>
+                <SelectItem value="pendiente">Pendiente</SelectItem>
+                <SelectItem value="vencido">Vencido</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           {hasActiveFilters && (
             <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 gap-1 text-muted-foreground">
               <X className="w-3.5 h-3.5" />
