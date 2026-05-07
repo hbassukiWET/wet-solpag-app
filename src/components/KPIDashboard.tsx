@@ -39,10 +39,20 @@ const EMPRESA_COLORS: Record<string, string> = {
 const CURRENCY_COLORS: Record<string, string> = {
   MXN: "#1E3A5F",
   USD: "#2E86AB",
-  EUR: "#A8DADC",
+  EUR: "#48CAE4",
 };
 
-const TREEMAP_SCALE = ["#1E3A5F", "#2E86AB", "#90C4D8", "#C8E6F0"];
+const TREEMAP_SCALE = ["#1E3A5F", "#2E86AB", "#48CAE4", "#90E0EF", "#CAF0F8"];
+
+function treemapColorByRank(rank: number): string {
+  if (rank === 0) return "#1E3A5F";
+  if (rank <= 2) return "#2E86AB";
+  if (rank <= 5) return "#48CAE4";
+  if (rank <= 9) return "#90E0EF";
+  return "#CAF0F8";
+}
+
+const DARK_TREEMAP_FILLS = new Set(["#1E3A5F", "#2E86AB"]);
 
 function parseDate(raw: string): Date | null {
   if (!raw) return null;
@@ -224,7 +234,7 @@ const KPIDashboard = () => {
       .sort((a, b) => b.size - a.size)
       .slice(0, 30);
     const total = arr.reduce((s, d) => s + d.size, 0);
-    return arr.map(d => ({ ...d, __total: total }));
+    return arr.map((d, i) => ({ ...d, __total: total, __fill: treemapColorByRank(i) }));
   }, [filtered, usdRate, eurRate]);
 
   // Section 6: Timeline pendientes
@@ -566,28 +576,26 @@ const NavyTooltip = ({ active, payload }: any) => {
 
 // Treemap custom node — escala azul según tamaño
 const TreemapNode = (props: any) => {
-  const { x, y, width, height, name, size, root } = props;
-  // determinar tier por tamaño relativo al máximo del dataset
-  let fill = "#C8E6F0";
-  if (root && Array.isArray(root.children) && root.children.length > 0) {
-    const max = root.children[0].size || 1;
-    const ratio = (size || 0) / max;
-    if (ratio >= 0.6) fill = "#1E3A5F";
-    else if (ratio >= 0.25) fill = "#2E86AB";
-    else if (ratio >= 0.08) fill = "#90C4D8";
-    else fill = "#C8E6F0";
+  const { x, y, width, height, name, size, payload, index, root } = props;
+  let fill: string = payload?.__fill || props.__fill;
+  if (!fill) {
+    const rank = typeof index === "number"
+      ? index
+      : (root?.children ? root.children.findIndex((c: any) => c.name === name) : 0);
+    fill = treemapColorByRank(rank >= 0 ? rank : 0);
   }
+  const textColor = DARK_TREEMAP_FILLS.has(fill) ? "#fff" : "#1E3A5F";
   const showLabel = width > 70 && height > 36;
   return (
     <g>
       <rect x={x} y={y} width={width} height={height} style={{ fill, stroke: "#fff", strokeWidth: 2 }} />
       {showLabel && (
         <>
-          <text x={x + 8} y={y + 18} fill="#fff" fontSize={11} fontWeight={700} style={{ pointerEvents: "none" }}>
+          <text x={x + 8} y={y + 18} fill={textColor} fontSize={11} fontWeight={700} style={{ pointerEvents: "none" }}>
             {String(name).length > Math.floor(width / 7) ? String(name).slice(0, Math.floor(width / 7) - 1) + "…" : name}
           </text>
           {height > 50 && (
-            <text x={x + 8} y={y + 34} fill="#fff" fontSize={10} fontWeight={400} style={{ pointerEvents: "none" }}>
+            <text x={x + 8} y={y + 34} fill={textColor} fontSize={10} fontWeight={400} style={{ pointerEvents: "none" }}>
               ${(size / 1000).toFixed(0)}k
             </text>
           )}
