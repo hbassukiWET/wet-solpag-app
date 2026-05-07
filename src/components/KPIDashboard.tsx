@@ -288,25 +288,52 @@ const KPIDashboard = () => {
     <div className="space-y-6 max-w-7xl mx-auto bg-[#F4F5F7] -mx-4 px-4 py-4 rounded-lg">
       {/* Filtro principal: empresa */}
       <Card className="rounded-2xl shadow-sm border-slate-200">
-        <div className="flex flex-wrap items-center justify-between gap-3 p-4">
-          <div className="flex items-center gap-3">
+        <div className="p-4 space-y-3">
+          <div className="flex items-center justify-between">
             <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#4A5568]">Filtrar por empresa</span>
-            <Select value={filterEmpresa} onValueChange={setFilterEmpresa}>
-              <SelectTrigger className="w-[180px] h-9 rounded-lg"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas las empresas</SelectItem>
-                {empresasList.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            {filterEmpresa !== "all" && (
-              <button onClick={() => setFilterEmpresa("all")} className="text-xs text-slate-500 hover:text-slate-800 underline">
-                limpiar
-              </button>
-            )}
+            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={loadRecords}>
+              <RefreshCw className="h-4 w-4" />
+            </Button>
           </div>
-          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={loadRecords}>
-            <RefreshCw className="h-4 w-4" />
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {(() => {
+              const isAll = filterEmpresa === "all";
+              return (
+                <button
+                  onClick={() => setFilterEmpresa("all")}
+                  className={cn(
+                    "px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider border-2 transition-all",
+                    isAll
+                      ? "bg-slate-800 text-white border-slate-800 shadow-md scale-105"
+                      : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"
+                  )}
+                >
+                  Todas
+                </button>
+              );
+            })()}
+            {empresasList.map(e => {
+              const color = EMPRESA_COLORS[e] || "#64748b";
+              const active = filterEmpresa === e;
+              return (
+                <button
+                  key={e}
+                  onClick={() => setFilterEmpresa(active ? "all" : e)}
+                  className={cn(
+                    "px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider border-2 transition-all",
+                    active ? "text-white shadow-md scale-105" : "bg-white hover:scale-[1.02]"
+                  )}
+                  style={
+                    active
+                      ? { backgroundColor: color, borderColor: color }
+                      : { color, borderColor: color }
+                  }
+                >
+                  {e}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </Card>
 
@@ -317,7 +344,7 @@ const KPIDashboard = () => {
             <button className="w-full flex items-center justify-between p-4 text-sm font-semibold text-slate-700 hover:text-slate-900">
               <span className="flex items-center gap-2">
                 <Settings2 className="h-4 w-4" />
-                Parámetros del dashboard
+                Ajuste de tipo de cambio
               </span>
               <ChevronDown className={cn("h-4 w-4 transition-transform", paramsOpen && "rotate-180")} />
             </button>
