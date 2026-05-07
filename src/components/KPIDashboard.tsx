@@ -286,30 +286,42 @@ const KPIDashboard = () => {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto bg-[#F4F5F7] -mx-4 px-4 py-4 rounded-lg">
-      {/* Parámetros globales */}
+      {/* Filtro principal: empresa */}
+      <Card className="rounded-2xl shadow-sm border-slate-200">
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4">
+          <div className="flex items-center gap-3">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#4A5568]">Filtrar por empresa</span>
+            <Select value={filterEmpresa} onValueChange={setFilterEmpresa}>
+              <SelectTrigger className="w-[180px] h-9 rounded-lg"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas las empresas</SelectItem>
+                {empresasList.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            {filterEmpresa !== "all" && (
+              <button onClick={() => setFilterEmpresa("all")} className="text-xs text-slate-500 hover:text-slate-800 underline">
+                limpiar
+              </button>
+            )}
+          </div>
+          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={loadRecords}>
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
+      </Card>
+
+      {/* Parámetros (tipos de cambio) */}
       <Card className="rounded-2xl shadow-sm border-slate-200">
         <Collapsible open={paramsOpen} onOpenChange={setParamsOpen}>
-          <div className="flex items-center justify-between p-4">
-            <CollapsibleTrigger asChild>
-              <button className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900">
+          <CollapsibleTrigger asChild>
+            <button className="w-full flex items-center justify-between p-4 text-sm font-semibold text-slate-700 hover:text-slate-900">
+              <span className="flex items-center gap-2">
                 <Settings2 className="h-4 w-4" />
                 Parámetros del dashboard
-                <ChevronDown className={cn("h-4 w-4 transition-transform", paramsOpen && "rotate-180")} />
-              </button>
-            </CollapsibleTrigger>
-            <div className="flex items-center gap-3">
-              <Select value={filterEmpresa} onValueChange={setFilterEmpresa}>
-                <SelectTrigger className="w-[160px] h-9 rounded-lg"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas las empresas</SelectItem>
-                  {empresasList.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={loadRecords}>
-                <RefreshCw className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+              </span>
+              <ChevronDown className={cn("h-4 w-4 transition-transform", paramsOpen && "rotate-180")} />
+            </button>
+          </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="px-4 pb-4 grid grid-cols-2 gap-4 max-w-md">
               <div className="space-y-1">
