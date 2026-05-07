@@ -267,6 +267,39 @@ const KPIDashboard = () => {
     });
   }, [pendientes, vencidas, highlightVencidas]);
 
+  // Totales por empresa (MXN eq.) — siempre todas las empresas (ignora filtro)
+  const totalesPorEmpresa = useMemo(() => {
+    const map: Record<string, number> = {};
+    records.forEach(r => {
+      const e = r.empresa || "—";
+      map[e] = (map[e] || 0) + toMXN(r.monto_total, r.moneda);
+    });
+    const arr = Object.entries(map)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+    const total = arr.reduce((s, d) => s + d.value, 0);
+    return { rows: arr, total };
+  }, [records, usdRate, eurRate]);
+
+  // Gasto mensual (MXN eq.) — respeta filtro empresa; agrupado por mes (fecha_solicitud)
+  const gastoMensual = useMemo(() => {
+    const map: Record<string, number> = {};
+    filtered.forEach(r => {
+      const d = parseDate(r.fecha_solicitud) || parseDate(r.fecha_pago_real) || parseDate(r.fecha_pago);
+      if (!d) return;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      map[key] = (map[key] || 0) + toMXN(r.monto_total, r.moneda);
+    });
+    return Object.entries(map)
+      .map(([key, value]) => {
+        const [y, m] = key.split("-").map(Number);
+        const label = new Date(y, m - 1, 1).toLocaleDateString("es-MX", { month: "short", year: "2-digit" });
+        return { key, label, value };
+      })
+      .sort((a, b) => a.key.localeCompare(b.key));
+  }, [filtered, usdRate, eurRate]);
+
+
   if (loading) {
     return (
       <div className="space-y-6 max-w-7xl mx-auto">
