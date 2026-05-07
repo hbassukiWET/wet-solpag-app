@@ -234,7 +234,7 @@ const KPIDashboard = () => {
       .sort((a, b) => b.size - a.size)
       .slice(0, 30);
     const total = arr.reduce((s, d) => s + d.size, 0);
-    return arr.map(d => ({ ...d, __total: total }));
+    return arr.map((d, i) => ({ ...d, __total: total, __fill: treemapColorByRank(i) }));
   }, [filtered, usdRate, eurRate]);
 
   // Section 6: Timeline pendientes
