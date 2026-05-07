@@ -462,7 +462,7 @@ const KPIDashboard = () => {
             {byEmpresa.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={byEmpresa} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={95} paddingAngle={2} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={{ stroke: "#CBD5E0" }} style={{ fontSize: 12, fill: "#2D3748", fontWeight: 500 }}>
+                  <Pie data={byEmpresa} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={95} paddingAngle={2} label={{ fill: "#2D3748", fontSize: 12, fontWeight: 500, formatter: (v: any, _n: any, p: any) => `${p?.name ?? ""} ${((p?.percent ?? 0) * 100).toFixed(0)}%` }} labelLine={{ stroke: "#CBD5E0" }}>
                     {byEmpresa.map((d, i) => <Cell key={i} fill={EMPRESA_COLORS[d.name] || TREEMAP_SCALE[i % TREEMAP_SCALE.length]} />)}
                   </Pie>
                   <Tooltip content={<NavyTooltip />} />
@@ -480,7 +480,7 @@ const KPIDashboard = () => {
             {byMoneda.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={byMoneda} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={95} paddingAngle={2} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={{ stroke: "#CBD5E0" }} style={{ fontSize: 12, fill: "#2D3748", fontWeight: 500 }}>
+                  <Pie data={byMoneda} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={95} paddingAngle={2} label={{ fill: "#2D3748", fontSize: 12, fontWeight: 500, formatter: (v: any, _n: any, p: any) => `${p?.name ?? ""} ${((p?.percent ?? 0) * 100).toFixed(0)}%` }} labelLine={{ stroke: "#CBD5E0" }}>
                     {byMoneda.map((d, i) => <Cell key={i} fill={CURRENCY_COLORS[d.name] || TREEMAP_SCALE[i % TREEMAP_SCALE.length]} />)}
                   </Pie>
                   <Tooltip content={<NavyTooltip />} />
