@@ -10,7 +10,7 @@ import { AlertTriangle, RefreshCw, Clock, FileX, Wallet, CheckCircle2, ChevronDo
 import { cn } from "@/lib/utils";
 import { fetchRecords } from "@/lib/google-api";
 import {
-  PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Treemap, Legend,
+  PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend, LabelList,
 } from "recharts";
 
 interface DashRecord {
@@ -509,19 +509,47 @@ const KPIDashboard = () => {
       {/* SECCIÓN 4 - Treemap proveedores */}
       <Card className="rounded-2xl shadow-sm border-slate-200">
         <CardHeader className="pb-2">
-          <CardTitle className="text-[13px] font-semibold uppercase tracking-[0.05em] text-[#4A5568]">Distribución por proveedor (MXN eq.)</CardTitle>
+          <CardTitle className="text-[13px] font-semibold uppercase tracking-[0.05em] text-[#4A5568]">Top proveedores (MXN eq.)</CardTitle>
         </CardHeader>
-        <CardContent className="h-96">
+        <CardContent className="h-[28rem]">
           {treemapData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
-              <Treemap
-                data={treemapData}
-                dataKey="size"
-                stroke="#fff"
-                content={<TreemapNode />}
+              <BarChart
+                data={treemapData.slice(0, 15).map(d => ({ ...d, value: d.size }))}
+                layout="vertical"
+                margin={{ top: 8, right: 80, left: 8, bottom: 8 }}
+                barCategoryGap={6}
               >
-                <Tooltip content={<NavyTooltip />} />
-              </Treemap>
+                <CartesianGrid horizontal={false} stroke="#E2E8F0" strokeDasharray="3 3" />
+                <XAxis
+                  type="number"
+                  tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+                  tick={{ fill: "#718096", fontSize: 11 }}
+                  axisLine={{ stroke: "#CBD5E0" }}
+                  tickLine={false}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  width={160}
+                  tick={{ fill: "#2D3748", fontSize: 11, fontWeight: 500 }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v: string) => (v.length > 22 ? v.slice(0, 21) + "…" : v)}
+                />
+                <Tooltip cursor={{ fill: "rgba(30,58,95,0.06)" }} content={<NavyTooltip />} />
+                <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={18}>
+                  {treemapData.slice(0, 15).map((d, i) => (
+                    <Cell key={i} fill={d.__fill} />
+                  ))}
+                  <LabelList
+                    dataKey="value"
+                    position="right"
+                    formatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
+                    style={{ fill: "#4A5568", fontSize: 11, fontWeight: 600 }}
+                  />
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           ) : <p className="text-slate-400 text-sm text-center pt-20">Sin datos</p>}
         </CardContent>
