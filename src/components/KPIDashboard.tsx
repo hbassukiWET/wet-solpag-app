@@ -55,8 +55,13 @@ function treemapColorByRank(rank: number): string {
 const DARK_TREEMAP_FILLS = new Set(["#1E3A5F", "#2E86AB"]);
 
 const renderPieLabel = (props: any) => {
-  const { x, y, cx, name, percent, textAnchor } = props;
-  const anchor = textAnchor || (x > cx ? "start" : "end");
+  const { cx, cy, midAngle, outerRadius, name, percent } = props;
+  if (percent < 0.04) return null; // ocultar slices muy pequeños para evitar encimado
+  const RAD = Math.PI / 180;
+  const r = outerRadius + 16;
+  const x = cx + r * Math.cos(-midAngle * RAD);
+  const y = cy + r * Math.sin(-midAngle * RAD);
+  const anchor = x > cx ? "start" : "end";
   return (
     <text x={x} y={y} fill="#2D3748" fontSize={12} fontWeight={500} textAnchor={anchor} dominantBaseline="central">
       {`${name} ${(percent * 100).toFixed(0)}%`}
