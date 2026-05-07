@@ -56,15 +56,18 @@ const DARK_TREEMAP_FILLS = new Set(["#1E3A5F", "#2E86AB"]);
 
 const renderPieLabel = (props: any) => {
   const { cx, cy, midAngle, outerRadius, name, percent } = props;
-  if (percent < 0.04) return null; // ocultar slices muy pequeños para evitar encimado
   const RAD = Math.PI / 180;
-  const r = outerRadius + 16;
+  // empujar más afuera los slices pequeños para evitar encimado
+  const extra = percent < 0.05 ? 28 : percent < 0.1 ? 20 : 14;
+  const r = outerRadius + extra;
   const x = cx + r * Math.cos(-midAngle * RAD);
   const y = cy + r * Math.sin(-midAngle * RAD);
   const anchor = x > cx ? "start" : "end";
+  const pct = percent * 100;
+  const pctStr = pct < 1 ? pct.toFixed(1) : pct.toFixed(0);
   return (
     <text x={x} y={y} fill="#2D3748" fontSize={12} fontWeight={500} textAnchor={anchor} dominantBaseline="central">
-      {`${name} ${(percent * 100).toFixed(0)}%`}
+      {`${name} ${pctStr}%`}
     </text>
   );
 };
@@ -477,7 +480,7 @@ const KPIDashboard = () => {
             {byEmpresa.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={byEmpresa} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={95} paddingAngle={2} label={renderPieLabel} labelLine={{ stroke: "#CBD5E0" }}>
+                  <Pie data={byEmpresa} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={48} outerRadius={82} paddingAngle={2} label={renderPieLabel} labelLine={{ stroke: "#CBD5E0" }} minAngle={6}>
                     {byEmpresa.map((d, i) => <Cell key={i} fill={EMPRESA_COLORS[d.name] || TREEMAP_SCALE[i % TREEMAP_SCALE.length]} />)}
                   </Pie>
                   <Tooltip content={<NavyTooltip />} />
@@ -495,7 +498,7 @@ const KPIDashboard = () => {
             {byMoneda.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={byMoneda} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={95} paddingAngle={2} label={renderPieLabel} labelLine={{ stroke: "#CBD5E0" }}>
+                  <Pie data={byMoneda} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={48} outerRadius={82} paddingAngle={2} label={renderPieLabel} labelLine={{ stroke: "#CBD5E0" }} minAngle={6}>
                     {byMoneda.map((d, i) => <Cell key={i} fill={CURRENCY_COLORS[d.name] || TREEMAP_SCALE[i % TREEMAP_SCALE.length]} />)}
                   </Pie>
                   <Tooltip content={<NavyTooltip />} />
