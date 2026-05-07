@@ -39,10 +39,20 @@ const EMPRESA_COLORS: Record<string, string> = {
 const CURRENCY_COLORS: Record<string, string> = {
   MXN: "#1E3A5F",
   USD: "#2E86AB",
-  EUR: "#A8DADC",
+  EUR: "#48CAE4",
 };
 
-const TREEMAP_SCALE = ["#1E3A5F", "#2E86AB", "#90C4D8", "#C8E6F0"];
+const TREEMAP_SCALE = ["#1E3A5F", "#2E86AB", "#48CAE4", "#90E0EF", "#CAF0F8"];
+
+function treemapColorByRank(rank: number): string {
+  if (rank === 0) return "#1E3A5F";
+  if (rank <= 2) return "#2E86AB";
+  if (rank <= 5) return "#48CAE4";
+  if (rank <= 9) return "#90E0EF";
+  return "#CAF0F8";
+}
+
+const DARK_TREEMAP_FILLS = new Set(["#1E3A5F", "#2E86AB"]);
 
 function parseDate(raw: string): Date | null {
   if (!raw) return null;
