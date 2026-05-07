@@ -267,6 +267,39 @@ const KPIDashboard = () => {
     });
   }, [pendientes, vencidas, highlightVencidas]);
 
+  // Totales por empresa (MXN eq.) — siempre todas las empresas (ignora filtro)
+  const totalesPorEmpresa = useMemo(() => {
+    const map: Record<string, number> = {};
+    records.forEach(r => {
+      const e = r.empresa || "—";
+      map[e] = (map[e] || 0) + toMXN(r.monto_total, r.moneda);
+    });
+    const arr = Object.entries(map)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+    const total = arr.reduce((s, d) => s + d.value, 0);
+    return { rows: arr, total };
+  }, [records, usdRate, eurRate]);
+
+  // Gasto mensual (MXN eq.) — respeta filtro empresa; agrupado por mes (fecha_solicitud)
+  const gastoMensual = useMemo(() => {
+    const map: Record<string, number> = {};
+    filtered.forEach(r => {
+      const d = parseDate(r.fecha_solicitud) || parseDate(r.fecha_pago_real) || parseDate(r.fecha_pago);
+      if (!d) return;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      map[key] = (map[key] || 0) + toMXN(r.monto_total, r.moneda);
+    });
+    return Object.entries(map)
+      .map(([key, value]) => {
+        const [y, m] = key.split("-").map(Number);
+        const label = new Date(y, m - 1, 1).toLocaleDateString("es-MX", { month: "short", year: "2-digit" });
+        return { key, label, value };
+      })
+      .sort((a, b) => a.key.localeCompare(b.key));
+  }, [filtered, usdRate, eurRate]);
+
+
   if (loading) {
     return (
       <div className="space-y-6 max-w-7xl mx-auto">
@@ -598,6 +631,85 @@ const KPIDashboard = () => {
       </Card>
 
       {/* SECCIÓN 5 - Proyectos */}
+
+      {/* SECCIÓN FINAL - Totales por empresa + Gasto mensual */}
+      <div className="grid lg:grid-cols-2 gap-4">
+        <Card className="rounded-2xl shadow-sm border-slate-200">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold text-slate-700">
+              Total gastado por empresa (MXN eq.)
+            </CardTitle>
+            <span className="text-xs text-slate-500">Todas las empresas — histórico</span>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow className="border-slate-200 hover:bg-transparent">
+                  <TableHead className="text-xs">Empresa</TableHead>
+                  <TableHead className="text-xs text-right">Total</TableHead>
+                  <TableHead className="text-xs text-right">%</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {totalesPorEmpresa.rows.map((r, i) => {
+                  const color = EMPRESA_COLORS[r.name] || "#64748b";
+                  const pct = totalesPorEmpresa.total > 0 ? (r.value / totalesPorEmpresa.total) * 100 : 0;
+                  return (
+                    <TableRow key={r.name} className={cn("border-slate-100", i % 2 === 1 && "bg-slate-50/60")}>
+                      <TableCell className="py-2">
+                        <span className="inline-flex items-center gap-2">
+                          <span className="h-2.5 w-2.5 rounded-full" style={{ background: color }} />
+                          <span className="font-semibold text-slate-700">{r.name}</span>
+                        </span>
+                      </TableCell>
+                      <TableCell className="py-2 text-right font-medium text-slate-800">{fmtMXN(r.value)}</TableCell>
+                      <TableCell className="py-2 text-right text-slate-500">{pct.toFixed(1)}%</TableCell>
+                    </TableRow>
+                  );
+                })}
+                <TableRow className="border-t-2 border-slate-300 bg-slate-100">
+                  <TableCell className="py-2 font-bold text-slate-900">TOTAL</TableCell>
+                  <TableCell className="py-2 text-right font-bold text-slate-900">{fmtMXN(totalesPorEmpresa.total)}</TableCell>
+                  <TableCell className="py-2 text-right font-bold text-slate-900">100%</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl shadow-sm border-slate-200">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold text-slate-700">
+              Gasto mensual (MXN eq.)
+            </CardTitle>
+            <span className="text-xs text-slate-500">
+              {filterEmpresa === "all" ? "Todas las empresas" : `Empresa: ${filterEmpresa}`}
+            </span>
+          </CardHeader>
+          <CardContent>
+            {gastoMensual.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={gastoMensual} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748B" }} />
+                  <YAxis tick={{ fontSize: 11, fill: "#64748B" }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip content={<NavyTooltip />} />
+                  <Bar
+                    dataKey="value"
+                    fill={filterEmpresa === "all" ? "#1E3A5F" : (EMPRESA_COLORS[filterEmpresa] || "#1E3A5F")}
+                    radius={[6, 6, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-sm text-slate-400">
+                Sin datos para mostrar
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
     </div>
   );
 };
