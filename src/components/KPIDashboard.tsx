@@ -54,6 +54,16 @@ function treemapColorByRank(rank: number): string {
 
 const DARK_TREEMAP_FILLS = new Set(["#1E3A5F", "#2E86AB"]);
 
+const renderPieLabel = (props: any) => {
+  const { x, y, cx, name, percent, textAnchor } = props;
+  const anchor = textAnchor || (x > cx ? "start" : "end");
+  return (
+    <text x={x} y={y} fill="#2D3748" fontSize={12} fontWeight={500} textAnchor={anchor} dominantBaseline="central">
+      {`${name} ${(percent * 100).toFixed(0)}%`}
+    </text>
+  );
+};
+
 function parseDate(raw: string): Date | null {
   if (!raw) return null;
   const m = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
