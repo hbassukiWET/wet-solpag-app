@@ -64,7 +64,7 @@ const LoginPage = () => {
             <Button type="submit" className="w-full">Ingresar</Button>
           </form>
           <p className="text-[10px] text-muted-foreground/50 text-center pt-2">
-            V-3.8
+            V-3.9
           </p>
         </CardContent>
       </Card>
