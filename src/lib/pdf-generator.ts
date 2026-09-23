@@ -109,8 +109,13 @@ export async function generatePDF(data: PaymentRequest): Promise<Uint8Array> {
   };
   const lightAccent = blendWithWhite(accentColor, 0.12);
 
+  // Strip control characters that WinAnsi (StandardFonts) cannot encode
+  const sanitize = (text: string): string =>
+    text.replace(/[\x00-\x08\x0A-\x1F\x7F]/g, '').replace(/\t/g, '    ');
+
   // Word-wrap helper: splits text into lines that fit within maxWidth
   const wrapText = (text: string, font: typeof helvetica, maxWidth: number): string[] => {
+    text = sanitize(text);
     const words = text.split(' ');
     const lines: string[] = [];
     let current = '';
@@ -230,7 +235,7 @@ export async function generatePDF(data: PaymentRequest): Promise<Uint8Array> {
     y -= 15;
 
     const maxWidth = tableWidth - 20;
-    const words = data.comentarios.split(' ');
+    const words = sanitize(data.comentarios).split(' ');
     let line = '';
     for (const word of words) {
       const testLine = line ? `${line} ${word}` : word;

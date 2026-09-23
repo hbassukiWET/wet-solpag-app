@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CheckCircle2, ExternalLink, FileText } from "lucide-react";
+import { open } from "@tauri-apps/plugin-shell";
 
 interface ConfirmationScreenProps {
   numSP: string;
@@ -27,11 +28,9 @@ const ConfirmationScreen = ({ numSP, driveUrl, onNewRequest }: ConfirmationScree
 
           <div className="space-y-3">
             {driveUrl && (
-              <Button asChild variant="outline" className="w-full gap-2">
-                <a href={driveUrl} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="w-4 h-4" />
-                  Ver archivo en Drive
-                </a>
+              <Button variant="outline" className="w-full gap-2" onClick={() => open(driveUrl)}>
+                <ExternalLink className="w-4 h-4" />
+                Ver archivo en Drive
               </Button>
             )}
             <Button onClick={onNewRequest} className="w-full gap-2">
